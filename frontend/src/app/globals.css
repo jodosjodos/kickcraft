@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  /* Typography */
+  --font-heading: var(--font-epilogue), "Epilogue", sans-serif;
+  --font-body: var(--font-inter), "Inter", sans-serif;
+
+  /* Colors — dark mode default */
+  --color-background: #0a0a0a;
+  --color-surface: #131313;
+  --color-surface-elevated: #1c1b1b;
+  --color-surface-high: #2a2a2a;
+  --color-text: #e5e2e1;
+  --color-text-muted: #a0a0a0;
+  --color-border: #333535;
+  --color-primary: #ff4500;
+  --color-primary-muted: #ffb5a0;
+  --color-primary-inverse: #b12d00;
+  --color-secondary: #41e575;
+  --color-error: #ffb4ab;
+  --color-outline: #ad887e;
+  --color-product-card: #f5f5f5;
+
+  /* Border radius */
+  --radius-sm: 0.125rem;
+  --radius: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
+
+  /* Spacing extras */
+  --spacing-container: 1280px;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+/* Hide scrollbar — keep scroll functionality */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Material Symbols icon variants */
+.icon-filled {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+.icon-outline {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
