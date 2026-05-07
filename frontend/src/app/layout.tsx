@@ -3,6 +3,7 @@ import { Epilogue, Inter } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 import { AuthProvider } from "@/providers/auth-provider";
+import { CartProvider } from "@/providers/cart-provider";
 
 const epilogue = Epilogue({
   variable: "--font-epilogue",
@@ -50,7 +51,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen antialiased bg-background text-text font-body">
         <QueryProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <CartProvider>{children}</CartProvider>
+          </AuthProvider>
         </QueryProvider>
       </body>
     </html>

@@ -56,3 +56,15 @@ export interface CartItem {
   size: string;
   quantity: number;
 }
+
+export interface LocalCartItem {
+  id: string;
+  productId: string;
+  slug: string;
+  name: string;
+  brand: string;
+  price: number;
+  imageUrl?: string;
+  size: string;
+  quantity: number;
+}

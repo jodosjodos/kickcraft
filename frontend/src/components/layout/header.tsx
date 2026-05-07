@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
+import { useCart } from "@/providers/cart-provider";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ const navLinks = [
 export function Header() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { itemCount } = useCart();
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -73,6 +75,11 @@ export function Header() {
               aria-label="Cart"
             >
               <Icon name="shopping_bag" size={22} />
+              {itemCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-primary text-white font-body text-[10px] font-bold px-1">
+                  {itemCount > 99 ? "99+" : itemCount}
+                </span>
+              )}
             </Link>
 
             {user ? (
