@@ -1,5 +1,20 @@
 import type { User } from "@/types/api/auth";
 
+export function createMockJwt(user: User): string {
+  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const exp = Math.floor(Date.now() / 1000) + 86400;
+  const payloadData: Record<string, unknown> = {
+    sub: user.id,
+    email: user.email,
+    role: user.role,
+    name: user.name,
+    exp,
+  };
+  if (user.phone) payloadData.phone = user.phone;
+  const payload = btoa(JSON.stringify(payloadData));
+  return `${header}.${payload}.mock`;
+}
+
 export function parseJwt(token: string): Record<string, unknown> | null {
   try {
     const payload = token.split(".")[1];

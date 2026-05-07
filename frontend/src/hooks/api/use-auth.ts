@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import * as authService from "@/services/auth.service";
 import { queryKeys } from "@/lib/query-keys";
+import { createMockJwt } from "@/lib/auth";
 import type {
   ForgotPasswordRequest,
   LoginRequest,
@@ -12,6 +13,15 @@ import type {
 } from "@/types/api/auth";
 import type { User } from "@/types/api/auth";
 import type { ApiError } from "@/types/api/common";
+
+function setAuthCookie(user: User) {
+  const token = createMockJwt(user);
+  document.cookie = `access_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+}
+
+function clearAuthCookie() {
+  document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
+}
 
 export function useMe() {
   return useQuery<User, ApiError>({
@@ -30,6 +40,7 @@ export function useLogin() {
   return useMutation<User, ApiError, LoginRequest>({
     mutationFn: authService.login,
     onSuccess: (user) => {
+      setAuthCookie(user);
       setUser(user);
       const redirect = searchParams.get("redirect");
       if (user.role === "admin") {
@@ -48,6 +59,7 @@ export function useRegister() {
   return useMutation<User, ApiError, RegisterRequest>({
     mutationFn: authService.register,
     onSuccess: (user) => {
+      setAuthCookie(user);
       setUser(user);
       router.push("/");
     },
@@ -67,6 +79,7 @@ export function useLogout() {
   return useMutation<void, ApiError, void>({
     mutationFn: authService.logout,
     onSuccess: () => {
+      clearAuthCookie();
       logout();
       router.push("/");
     },
