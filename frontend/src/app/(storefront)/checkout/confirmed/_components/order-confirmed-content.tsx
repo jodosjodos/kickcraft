@@ -66,7 +66,7 @@ export function OrderConfirmedContent() {
       {/* CTAs */}
       <div className="flex flex-col gap-3">
         <a
-          href={`https://wa.me/250788000000?text=${whatsappMsg}`}
+          href={`https://wa.me/250794050537?text=${whatsappMsg}`}
           target="_blank"
           rel="noopener noreferrer"
           className="w-full flex items-center justify-center gap-2 border border-secondary py-3 font-body text-sm font-semibold uppercase tracking-wider text-secondary hover:bg-secondary/10 transition-colors"

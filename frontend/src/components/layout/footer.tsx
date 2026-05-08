@@ -4,7 +4,7 @@ const socialLinks = [
   { label: "Instagram", href: "#" },
   { label: "TikTok", href: "#" },
   { label: "Snapchat", href: "#" },
-  { label: "WhatsApp", href: "https://wa.me/250700000000" },
+  { label: "WhatsApp", href: "https://wa.me/250794050537" },
 ];
 
 const shopLinks = [
@@ -18,7 +18,7 @@ const shopLinks = [
 export function Footer() {
   return (
     <footer className="w-full border-t border-border bg-background pt-20 pb-28 md:pb-10">
-      <div className="mx-auto grid max-w-container grid-cols-1 gap-12 px-8 md:grid-cols-4">
+      <div className="mx-auto grid max-w-container grid-cols-1 gap-12 px-8 md:grid-cols-5">
         {/* Branding */}
         <div className="col-span-1 md:col-span-2">
           <h2 className="font-heading text-4xl font-extrabold uppercase text-text mb-4">
@@ -37,6 +37,29 @@ export function Footer() {
           </h3>
           <ul className="flex flex-col gap-2">
             {shopLinks.map(({ label, href }) => (
+              <li key={href}>
+                <Link
+                  href={href}
+                  className="font-body text-sm text-text-muted hover:text-text underline decoration-primary underline-offset-4 transition-all duration-300"
+                >
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Info */}
+        <div>
+          <h3 className="font-heading text-xs font-bold uppercase tracking-wider text-text mb-4">
+            Company
+          </h3>
+          <ul className="flex flex-col gap-2">
+            {[
+              { label: "About Us", href: "/about" },
+              { label: "Contact", href: "/contact" },
+              { label: "Wishlist", href: "/wishlist" },
+            ].map(({ label, href }) => (
               <li key={href}>
                 <Link
                   href={href}
@@ -71,7 +94,7 @@ export function Footer() {
         </div>
 
         {/* Copyright */}
-        <div className="col-span-1 md:col-span-4 mt-8 border-t border-border pt-8">
+        <div className="col-span-1 md:col-span-5 mt-8 border-t border-border pt-8">
           <p className="font-body text-xs font-semibold uppercase tracking-wider text-text-muted text-center">
             © {new Date().getFullYear()} Kickcraft Rwanda. High-End Sneaker
             Destination.

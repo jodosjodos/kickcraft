@@ -1,24 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/utils";
+import { useWishlist } from "@/providers/wishlist-provider";
 import type { Product } from "@/types/api/products";
-
-const CARD_GRADIENTS = [
-  "from-orange-950/50 to-orange-900/20",
-  "from-blue-950/50 to-blue-900/20",
-  "from-violet-950/50 to-violet-900/20",
-  "from-emerald-950/50 to-emerald-900/20",
-  "from-rose-950/50 to-rose-900/20",
-  "from-cyan-950/50 to-cyan-900/20",
-  "from-amber-950/50 to-amber-900/20",
-  "from-fuchsia-950/50 to-fuchsia-900/20",
-];
-
-function cardGradient(id: string): string {
-  const index = id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return CARD_GRADIENTS[index % CARD_GRADIENTS.length];
-}
 
 interface ProductCardProps {
   product: Product;
@@ -26,8 +13,16 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, className }: ProductCardProps) {
+  const { isWishlisted, toggle } = useWishlist();
   const primaryImage = product.images[0];
-  const gradient = cardGradient(product.id);
+  const wishlisted = isWishlisted(product.id);
+  const isOnSale = product.originalPrice !== undefined && product.originalPrice > product.price;
+
+  function handleWishlistClick(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    toggle(product);
+  }
 
   return (
     <Link
@@ -49,19 +44,26 @@ export function ProductCard({ product, className }: ProductCardProps) {
             className="object-contain transition-all duration-500 ease-out group-hover:scale-110"
           />
         ) : (
-          <div
-            className={cn(
-              "w-full h-full flex items-center justify-center bg-linear-to-br",
-              gradient
-            )}
-          >
+          <div className="w-full h-full flex items-center justify-center bg-surface-elevated">
             <span className="material-symbols-outlined icon-outline text-[64px] text-text-muted/30">
               footwear
             </span>
           </div>
         )}
 
-        {product.stock <= 3 && product.stock > 0 && (
+        {/* Badges */}
+        {product.isNew && product.status !== "sold" && (
+          <span className="absolute top-2 left-2 bg-secondary text-background font-body text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
+            New
+          </span>
+        )}
+        {isOnSale && !product.isNew && product.status !== "sold" && (
+          <span className="absolute top-2 left-2 bg-primary text-white font-body text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
+            Sale
+          </span>
+        )}
+
+        {product.stock <= 3 && product.stock > 0 && product.status !== "sold" && (
           <span className="absolute top-2 right-2 bg-error/90 text-background font-body text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded">
             Only {product.stock} left
           </span>
@@ -74,19 +76,49 @@ export function ProductCard({ product, className }: ProductCardProps) {
             </span>
           </div>
         )}
+
+        {/* Wishlist heart */}
+        <button
+          onClick={handleWishlistClick}
+          aria-label={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
+          className={cn(
+            "absolute bottom-2 right-2 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200",
+            "opacity-0 group-hover:opacity-100 focus:opacity-100",
+            wishlisted
+              ? "bg-primary text-white opacity-100"
+              : "bg-background/80 text-text-muted hover:text-primary"
+          )}
+        >
+          <span
+            className={cn(
+              "material-symbols-outlined text-[18px] leading-none",
+              wishlisted ? "icon-fill" : "icon-outline"
+            )}
+          >
+            favorite
+          </span>
+        </button>
       </div>
 
       {/* Details */}
-      <div className="p-4">
+      <div className="p-3 md:p-4">
         <p className="font-body text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
           {product.brand}
         </p>
         <h3 className="font-heading text-sm font-bold uppercase tracking-tight text-text truncate mb-2 group-hover:text-primary transition-colors duration-200">
           {product.name}
         </h3>
-        <p className="font-heading text-base font-extrabold text-primary">
-          {formatPrice(product.price)}
-        </p>
+
+        <div className="flex items-baseline gap-2">
+          <p className="font-heading text-base font-extrabold text-primary">
+            {formatPrice(product.price)}
+          </p>
+          {isOnSale && (
+            <p className="font-body text-xs text-text-muted line-through">
+              {formatPrice(product.originalPrice!)}
+            </p>
+          )}
+        </div>
       </div>
     </Link>
   );

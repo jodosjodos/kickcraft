@@ -25,8 +25,25 @@ export function useProduct(slug: string) {
 
 export function useFeaturedProducts() {
   return useQuery<Product[], ApiError>({
-    queryKey: [...queryKeys.products.all, "featured"],
+    queryKey: queryKeys.products.featured(),
     queryFn: productsService.getFeaturedProducts,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useSimilarProducts(productId: string, subCategory: string) {
+  return useQuery<Product[], ApiError>({
+    queryKey: queryKeys.products.similar(productId, subCategory),
+    queryFn: () => productsService.getSimilarProducts(productId, subCategory),
+    enabled: !!productId && !!subCategory,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useSaleProducts() {
+  return useQuery<Product[], ApiError>({
+    queryKey: queryKeys.products.sale(),
+    queryFn: productsService.getSaleProducts,
     staleTime: 5 * 60 * 1000,
   });
 }

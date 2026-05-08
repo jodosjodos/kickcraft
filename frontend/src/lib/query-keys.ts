@@ -9,6 +9,10 @@ export const queryKeys = {
     list: (filters: ProductFilters) =>
       ["products", "list", filters] as const,
     detail: (slug: string) => ["products", "detail", slug] as const,
+    similar: (id: string, sub: string) =>
+      ["products", "similar", id, sub] as const,
+    sale: () => ["products", "sale"] as const,
+    featured: () => ["products", "featured"] as const,
   },
   orders: {
     all: ["orders"] as const,

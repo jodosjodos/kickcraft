@@ -1,28 +1,38 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Icon } from "@/components/ui/icon";
 
 export function HeroSection() {
   return (
-    <section className="relative flex min-h-[80vh] items-center overflow-hidden bg-surface">
-      {/* Decorative background */}
-      <div className="absolute inset-0 bg-linear-to-r from-background via-background/90 to-background/40" />
+    <section className="relative flex min-h-[88vh] items-center overflow-hidden bg-background">
+      {/* Dot grid pattern */}
       <div
-        className="absolute right-0 top-0 h-full w-1/2 bg-linear-to-l from-primary/5 to-transparent"
-        aria-hidden="true"
-      />
-      {/* Decorative accent circle */}
-      <div
-        className="absolute right-[10%] top-[20%] h-[400px] w-[400px] rounded-full bg-primary/5 blur-3xl"
-        aria-hidden="true"
-      />
-      <div
-        className="absolute right-[5%] bottom-[10%] h-[250px] w-[250px] rounded-full bg-secondary/5 blur-3xl"
+        className="absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, #e5e2e1 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
+        }}
         aria-hidden="true"
       />
 
+      {/* Hero shoe image — right half */}
+      <div className="absolute right-0 top-0 h-full w-[55%] md:w-[52%]">
+        <Image
+          src="https://lh3.googleusercontent.com/aida-public/AB6AXuAk86VJoETBMB1mP_aF7sDBZ2iyTs54d4APlfhfkEqQHIMLyfGRjvLl2WQskoitBeEylkS3QGpJjBPmDE4LwgPXMi0IgkEhuupb_kxKaPIyt1kYRnrXcm6mYu37aWtamiyRfDwOTbBjlRs5Bqd4WXwYg2iFJEtNNBBqWnDcC-z7rhwcLmPb_wprR17leS7lwvtMYrG0IpwSIsjozCWe00hX4W89q7v3TjiULJHdgQzm1RrifyFSaSV64tiwm7may-vOh1wgx7kW2hig"
+          alt="Premium sneaker — Kickcraft"
+          fill
+          priority
+          className="object-cover object-center"
+          sizes="55vw"
+        />
+        {/* Fade overlay over the image towards left */}
+        <div className="absolute inset-0 bg-linear-to-r from-background via-background/60 to-transparent" />
+      </div>
+
       {/* Content */}
-      <div className="relative z-10 mx-auto w-full max-w-container px-5 md:px-8 py-20">
-        <div className="max-w-2xl">
+      <div className="relative z-10 mx-auto w-full max-w-container px-5 md:px-8 py-24">
+        <div className="max-w-xl">
           {/* Eyebrow */}
           <p className="font-body text-xs font-semibold uppercase tracking-[0.15em] text-primary mb-4">
             Kigali&apos;s #1 Sneaker Destination
@@ -50,7 +60,7 @@ export function HeroSection() {
             </Link>
 
             <a
-              href="https://wa.me/250700000000"
+              href="https://wa.me/250794050537"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 border border-border text-text font-body font-semibold text-sm uppercase tracking-wider px-8 py-4 rounded hover:border-secondary hover:text-secondary active:scale-95 transition-all duration-200"
@@ -61,7 +71,7 @@ export function HeroSection() {
           </div>
 
           {/* Stats row */}
-          <div className="mt-14 flex gap-8">
+          <div className="mt-14 flex gap-10">
             {[
               { value: "500+", label: "Sneaker styles" },
               { value: "24h", label: "Kigali delivery" },

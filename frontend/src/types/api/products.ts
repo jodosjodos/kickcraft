@@ -2,6 +2,8 @@ export type SortOption = "newest" | "price-asc" | "price-desc" | "popular";
 
 export type ProductStatus = "active" | "sold" | "draft";
 
+export type SubCategory = "sneakers" | "loafers" | "boots" | "slides";
+
 export interface ProductImage {
   id: string;
   url: string;
@@ -15,16 +17,23 @@ export interface Product {
   name: string;
   brand: string;
   price: number;
+  originalPrice?: number;
   images: ProductImage[];
   sizes: string[];
   category: string;
+  subCategory: SubCategory;
   description: string;
   stock: number;
   status: ProductStatus;
+  isNew?: boolean;
+  colors?: string[];
+  rating?: number;
+  reviewCount?: number;
 }
 
 export interface ProductFilters {
   category?: string;
+  subCategory?: SubCategory;
   size?: string;
   minPrice?: number;
   maxPrice?: number;

@@ -18,69 +18,78 @@ function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="rounded border border-border bg-surface p-8">
-        <h1 className="font-heading text-2xl font-extrabold uppercase tracking-tight text-text mb-1">
-          Welcome Back
-        </h1>
-        <p className="font-body text-sm text-text-muted mb-8">
-          Sign in to your Kickcraft account
-        </p>
+    <div className="w-full">
+      <h1 className="font-heading text-3xl font-extrabold uppercase tracking-tight text-text mb-1">
+        Welcome Back
+      </h1>
+      <p className="font-body text-sm text-text-muted mb-8">
+        Sign in to your Kickcraft account
+      </p>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <Input
+          label="Email"
+          type="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          autoComplete="email"
+        />
+
+        <div className="flex flex-col gap-1.5">
           <Input
-            label="Email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            label="Password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             required
-            autoComplete="email"
+            autoComplete="current-password"
           />
-
-          <div className="flex flex-col gap-1.5">
-            <Input
-              label="Password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
-            <div className="flex justify-end">
-              <Link
-                href="/auth/forgot-password"
-                className="font-body text-xs text-text-muted hover:text-primary transition-colors"
-              >
-                Forgot password?
-              </Link>
-            </div>
+          <div className="flex justify-end">
+            <Link
+              href="/auth/forgot-password"
+              className="font-body text-xs text-text-muted hover:text-primary transition-colors"
+            >
+              Forgot password?
+            </Link>
           </div>
+        </div>
 
-          {login.error && (
-            <p className="font-body text-sm text-error">{login.error.message}</p>
-          )}
+        {login.error && (
+          <p className="font-body text-sm text-error">{login.error.message}</p>
+        )}
 
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            loading={login.isPending}
-            className="w-full mt-2"
-          >
-            Sign In
-          </Button>
-        </form>
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          loading={login.isPending}
+          className="w-full mt-2"
+        >
+          Sign In
+        </Button>
+      </form>
 
-        <p className="mt-6 text-center font-body text-sm text-text-muted">
+      <div className="mt-6 pt-6 border-t border-border">
+        <p className="text-center font-body text-sm text-text-muted">
           No account?{" "}
           <Link
             href="/auth/register"
-            className="text-primary hover:underline underline-offset-4"
+            className="text-primary hover:underline underline-offset-4 font-semibold"
           >
-            Create one
+            Create one free
           </Link>
+        </p>
+      </div>
+
+      {/* Dev hint */}
+      <div className="mt-6 p-3 bg-surface-elevated border border-border rounded">
+        <p className="font-body text-[11px] text-text-muted leading-relaxed">
+          <span className="font-semibold text-text">Dev:</span>{" "}
+          user@kickcraft.rw → storefront · admin@kickcraft.rw → admin panel
+          · any password
         </p>
       </div>
     </div>

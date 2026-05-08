@@ -4,6 +4,7 @@ import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 import { AuthProvider } from "@/providers/auth-provider";
 import { CartProvider } from "@/providers/cart-provider";
+import { WishlistProvider } from "@/providers/wishlist-provider";
 
 const epilogue = Epilogue({
   variable: "--font-epilogue",
@@ -52,7 +53,9 @@ export default function RootLayout({
       <body className="min-h-screen antialiased bg-background text-text font-body">
         <QueryProvider>
           <AuthProvider>
-            <CartProvider>{children}</CartProvider>
+            <CartProvider>
+                <WishlistProvider>{children}</WishlistProvider>
+              </CartProvider>
           </AuthProvider>
         </QueryProvider>
       </body>

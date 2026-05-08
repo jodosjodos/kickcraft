@@ -265,7 +265,7 @@ export default function OrderDetailPage({ params }: Props) {
       {/* WhatsApp CTA */}
       <div className="mt-6">
         <a
-          href={`https://wa.me/250788000000?text=${encodeURIComponent(`Hi! I have a question about order #${order.orderToken}`)}`}
+          href={`https://wa.me/250794050537?text=${encodeURIComponent(`Hi! I have a question about order #${order.orderToken}`)}`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 border border-secondary px-5 py-2.5 font-body text-sm font-semibold uppercase tracking-wider text-secondary hover:bg-secondary/10 transition-colors"

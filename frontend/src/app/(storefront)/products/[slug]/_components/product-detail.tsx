@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useProduct } from "@/hooks/api/use-products";
+import { useProduct, useSimilarProducts } from "@/hooks/api/use-products";
 import { useCart } from "@/providers/cart-provider";
+import { useWishlist } from "@/providers/wishlist-provider";
 import { ImageGallery } from "./image-gallery";
+import { ProductCard } from "@/components/product/product-card";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { formatPrice } from "@/lib/utils";
@@ -23,6 +25,37 @@ function cardGradient(id: string): string {
   return CARD_GRADIENTS[index % CARD_GRADIENTS.length];
 }
 
+function StarRating({ rating, count }: { rating: number; count?: number }) {
+  const stars = [1, 2, 3, 4, 5];
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-0.5">
+        {stars.map((star) => {
+          const filled = rating >= star;
+          const half = !filled && rating >= star - 0.5;
+          return (
+            <span
+              key={star}
+              className={cn(
+                "material-symbols-outlined text-[16px] leading-none",
+                filled || half ? "text-amber-400" : "text-text-muted/40",
+                filled ? "icon-fill" : half ? "icon-half" : "icon-outline"
+              )}
+            >
+              {half ? "star_half" : "star"}
+            </span>
+          );
+        })}
+      </div>
+      {count !== undefined && (
+        <span className="font-body text-xs text-text-muted">
+          ({count})
+        </span>
+      )}
+    </div>
+  );
+}
+
 type TabKey = "description" | "sizing" | "reviews";
 
 interface ProductDetailProps {
@@ -32,10 +65,16 @@ interface ProductDetailProps {
 export function ProductDetail({ slug }: ProductDetailProps) {
   const { data: product, isLoading, isError, error } = useProduct(slug);
   const { addItem } = useCart();
+  const { isWishlisted, toggle } = useWishlist();
   const [selectedSize, setSelectedSize] = useState<string>("");
+  const [selectedColor, setSelectedColor] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<TabKey>("description");
   const [addedToCart, setAddedToCart] = useState(false);
+
+  const subCategory = product?.subCategory ?? "sneakers";
+  const productId = product?.id ?? "";
+  const { data: similarProducts } = useSimilarProducts(productId, subCategory);
 
   if (isLoading) {
     return (
@@ -62,7 +101,11 @@ export function ProductDetail({ slug }: ProductDetailProps) {
   }
 
   const isSoldOut = product.status === "sold" || product.stock === 0;
+  const isOnSale =
+    product.originalPrice !== undefined && product.originalPrice > product.price;
   const gradient = cardGradient(product.id);
+  const wishlisted = isWishlisted(product.id);
+  const colors = product.colors ?? [];
 
   function handleAddToCart() {
     if (!selectedSize || isSoldOut || !product) return;
@@ -80,9 +123,26 @@ export function ProductDetail({ slug }: ProductDetailProps) {
     setTimeout(() => setAddedToCart(false), 2000);
   }
 
+  function handleWishlistToggle() {
+    if (!product) return;
+    toggle(product);
+  }
+
   const whatsappMsg = encodeURIComponent(
     `Hi! I'm interested in: ${product.name} (Size: ${selectedSize || "?"})\n${typeof window !== "undefined" ? window.location.href : ""}`
   );
+
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: "description", label: "Description" },
+    { key: "sizing", label: "Sizing & Fit" },
+    {
+      key: "reviews",
+      label:
+        product.reviewCount !== undefined
+          ? `Reviews (${product.reviewCount})`
+          : "Reviews",
+    },
+  ];
 
   return (
     <div className="max-w-container mx-auto px-5 md:px-4 py-8">
@@ -120,24 +180,45 @@ export function ProductDetail({ slug }: ProductDetailProps) {
         />
 
         {/* Info */}
-        <div className="flex flex-col gap-6">
-          {/* Brand + name + price */}
+        <div className="flex flex-col gap-5">
+          {/* Brand + name */}
           <div>
             <p className="font-body text-xs font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">
               {product.brand}
             </p>
-            <h1 className="font-heading text-2xl md:text-3xl font-extrabold uppercase tracking-tight text-text mb-3">
+            <h1 className="font-heading text-2xl md:text-3xl font-extrabold uppercase tracking-tight text-text mb-2">
               {product.name}
             </h1>
-            <p className="font-heading text-2xl font-extrabold text-primary">
-              {formatPrice(product.price)}
-            </p>
+
+            {/* Rating */}
+            {product.rating !== undefined && (
+              <div className="mb-3">
+                <StarRating rating={product.rating} count={product.reviewCount} />
+              </div>
+            )}
+
+            {/* Price */}
+            <div className="flex items-baseline gap-3">
+              <p className="font-heading text-2xl font-extrabold text-primary">
+                {formatPrice(product.price)}
+              </p>
+              {isOnSale && (
+                <p className="font-body text-sm text-text-muted line-through">
+                  {formatPrice(product.originalPrice!)}
+                </p>
+              )}
+              {isOnSale && (
+                <span className="bg-primary/10 text-primary font-body text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded">
+                  Sale
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Stock */}
+          {/* Stock warning */}
           {product.stock <= 5 && !isSoldOut && (
             <p className="font-body text-sm text-error font-semibold">
-              Only {product.stock} left in stock
+              Only {product.stock} left in stock — order soon
             </p>
           )}
 
@@ -145,6 +226,36 @@ export function ProductDetail({ slug }: ProductDetailProps) {
             <p className="font-body text-sm font-semibold uppercase tracking-wider text-text-muted bg-surface-elevated px-4 py-2 inline-block">
               Sold Out
             </p>
+          )}
+
+          {/* Color swatches */}
+          {colors.length > 0 && (
+            <div>
+              <p className="font-body text-xs font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">
+                Color
+                {selectedColor && (
+                  <span className="ml-2 font-normal capitalize text-text">
+                    — {selectedColor}
+                  </span>
+                )}
+              </p>
+              <div className="flex items-center gap-2">
+                {colors.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    aria-label={color}
+                    className={cn(
+                      "w-7 h-7 rounded-full border-2 transition-all duration-150",
+                      selectedColor === color
+                        ? "border-primary scale-110"
+                        : "border-transparent hover:border-outline"
+                    )}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
           )}
 
           {/* Size picker */}
@@ -157,9 +268,7 @@ export function ProductDetail({ slug }: ProductDetailProps) {
                 {selectedSize && (
                   <span className="font-body text-xs text-text-muted">
                     Selected:{" "}
-                    <span className="text-text font-semibold">
-                      {selectedSize}
-                    </span>
+                    <span className="text-text font-semibold">{selectedSize}</span>
                   </span>
                 )}
               </div>
@@ -230,7 +339,7 @@ export function ProductDetail({ slug }: ProductDetailProps) {
               onClick={handleAddToCart}
             >
               {addedToCart ? (
-                "Added!"
+                "Added to Cart!"
               ) : (
                 <>
                   <span className="material-symbols-outlined icon-outline text-[18px] mr-2">
@@ -242,7 +351,7 @@ export function ProductDetail({ slug }: ProductDetailProps) {
             </Button>
 
             <a
-              href={`https://wa.me/250788000000?text=${whatsappMsg}`}
+              href={`https://wa.me/250794050537?text=${whatsappMsg}`}
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
@@ -256,32 +365,62 @@ export function ProductDetail({ slug }: ProductDetailProps) {
               </span>
               Order on WhatsApp
             </a>
+
+            <button
+              onClick={handleWishlistToggle}
+              className={cn(
+                "w-full flex items-center justify-center gap-2 border py-3",
+                "font-body text-sm font-semibold uppercase tracking-wider transition-colors duration-150",
+                wishlisted
+                  ? "border-primary text-primary bg-primary/5 hover:bg-primary/10"
+                  : "border-border text-text-muted hover:border-outline hover:text-text"
+              )}
+            >
+              <span
+                className={cn(
+                  "material-symbols-outlined text-[18px]",
+                  wishlisted ? "icon-fill" : "icon-outline"
+                )}
+              >
+                favorite
+              </span>
+              {wishlisted ? "Saved to Wishlist" : "Save to Wishlist"}
+            </button>
           </div>
 
           {/* Trust badges */}
-          <div className="grid grid-cols-3 gap-3 pt-2 border-t border-border">
+          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border">
             <div className="text-center">
               <span className="material-symbols-outlined icon-outline text-[24px] text-text-muted block mb-1">
                 local_shipping
               </span>
-              <p className="font-body text-[10px] text-text-muted leading-tight">
-                Fast Delivery Kigali
+              <p className="font-body text-[10px] font-semibold text-text-muted leading-tight">
+                Fast Delivery
+              </p>
+              <p className="font-body text-[10px] text-text-muted/60 leading-tight">
+                Within Kigali
               </p>
             </div>
             <div className="text-center">
               <span className="material-symbols-outlined icon-outline text-[24px] text-secondary block mb-1">
                 payments
               </span>
-              <p className="font-body text-[10px] text-text-muted leading-tight">
-                50/50 MoMo Accepted
+              <p className="font-body text-[10px] font-semibold text-text-muted leading-tight">
+                50/50 MoMo
+              </p>
+              <p className="font-body text-[10px] text-text-muted/60 leading-tight">
+                Pay half upfront
               </p>
             </div>
             <div className="text-center">
               <span className="material-symbols-outlined icon-outline text-[24px] text-text-muted block mb-1">
                 verified
               </span>
-              <p className="font-body text-[10px] text-text-muted leading-tight">
+              <p className="font-body text-[10px] font-semibold text-text-muted leading-tight">
                 100% Authentic
+              </p>
+              <p className="font-body text-[10px] text-text-muted/60 leading-tight">
+                Verified pairs only
               </p>
             </div>
           </div>
@@ -290,19 +429,13 @@ export function ProductDetail({ slug }: ProductDetailProps) {
 
       {/* Tabs */}
       <div className="mt-12">
-        <div className="flex border-b border-border">
-          {(
-            [
-              { key: "description", label: "Description" },
-              { key: "sizing", label: "Sizing & Fit" },
-              { key: "reviews", label: "Reviews" },
-            ] as { key: TabKey; label: string }[]
-          ).map((tab) => (
+        <div className="flex border-b border-border overflow-x-auto scrollbar-none">
+          {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                "px-6 py-3 font-body text-sm font-semibold uppercase tracking-wider transition-colors duration-150",
+                "px-6 py-3 font-body text-sm font-semibold uppercase tracking-wider whitespace-nowrap transition-colors duration-150",
                 activeTab === tab.key
                   ? "text-primary border-b-2 border-primary -mb-px"
                   : "text-text-muted hover:text-text"
@@ -322,11 +455,13 @@ export function ProductDetail({ slug }: ProductDetailProps) {
           {activeTab === "sizing" && (
             <div className="font-body text-sm text-text-muted space-y-2 max-w-2xl">
               <p>All shoes are listed in EU sizing.</p>
-              <p>When in doubt, size up — Rwandan feet run slightly wider on average.</p>
+              <p>
+                When in doubt, size up — Rwandan feet run slightly wider on average.
+              </p>
               <p>
                 Questions? Message us on{" "}
                 <a
-                  href="https://wa.me/250788000000"
+                  href="https://wa.me/250794050537"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-secondary hover:underline underline-offset-4"
@@ -338,12 +473,47 @@ export function ProductDetail({ slug }: ProductDetailProps) {
             </div>
           )}
           {activeTab === "reviews" && (
-            <p className="font-body text-sm text-text-muted">
-              No reviews yet. Be the first to buy and leave one.
-            </p>
+            <div>
+              {product.rating !== undefined ? (
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="text-center">
+                    <p className="font-heading text-4xl font-extrabold text-text">
+                      {product.rating.toFixed(1)}
+                    </p>
+                    <StarRating rating={product.rating} />
+                    <p className="font-body text-xs text-text-muted mt-1">
+                      {product.reviewCount ?? 0} reviews
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+              <p className="font-body text-sm text-text-muted">
+                No written reviews yet. Be the first to buy and share your
+                experience.
+              </p>
+            </div>
           )}
         </div>
       </div>
+
+      {/* You May Also Like */}
+      {similarProducts && similarProducts.length > 0 && (
+        <div className="mt-16">
+          <div className="mb-6">
+            <p className="font-body text-xs font-semibold uppercase tracking-[0.15em] text-primary mb-1">
+              Similar picks
+            </p>
+            <h2 className="font-heading text-2xl font-extrabold uppercase tracking-tight text-text">
+              You May Also Like
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            {similarProducts.slice(0, 4).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
