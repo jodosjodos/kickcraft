@@ -24,54 +24,63 @@ interface CheckoutForm {
 }
 
 function StepIndicator({ step }: { step: Step }) {
-  const steps = ["Delivery", "Payment", "Confirm"];
+  const steps = [
+    { label: "Delivery", icon: "local_shipping" },
+    { label: "Payment", icon: "payments" },
+    { label: "Confirm", icon: "check_circle" },
+  ];
   return (
-    <div className="flex items-center gap-0 mb-10">
-      {steps.map((label, i) => {
-        const num = (i + 1) as Step;
-        const active = num === step;
-        const done = num < step;
-        return (
-          <div key={label} className="flex items-center flex-1">
-            <div className="flex flex-col items-center gap-1 flex-1">
+    <div className="mb-10">
+      {/* Progress bar */}
+      <div className="relative h-0.5 bg-border mb-5">
+        <div
+          className="absolute left-0 top-0 h-full bg-primary transition-all duration-500"
+          style={{ width: `${((step - 1) / 2) * 100}%` }}
+        />
+      </div>
+      {/* Step labels */}
+      <div className="flex justify-between">
+        {steps.map(({ label, icon }, i) => {
+          const num = (i + 1) as Step;
+          const active = num === step;
+          const done = num < step;
+          return (
+            <div key={label} className="flex flex-col items-center gap-1.5">
               <div
                 className={cn(
-                  "w-7 h-7 rounded-full flex items-center justify-center font-body text-xs font-bold border-2 transition-colors",
+                  "w-8 h-8 flex items-center justify-center border transition-all duration-200",
                   done
-                    ? "bg-secondary border-secondary text-background"
+                    ? "bg-secondary/20 border-secondary"
                     : active
-                    ? "bg-primary border-primary text-white"
-                    : "border-border text-text-muted bg-surface"
+                    ? "bg-primary/10 border-primary"
+                    : "bg-surface-elevated border-border"
                 )}
               >
-                {done ? (
-                  <span className="material-symbols-outlined icon-filled text-[14px]">
-                    check
-                  </span>
-                ) : (
-                  num
-                )}
+                <span
+                  className={cn(
+                    "material-symbols-outlined text-[16px]",
+                    done
+                      ? "icon-fill text-secondary"
+                      : active
+                      ? "icon-fill text-primary"
+                      : "icon-outline text-text-muted"
+                  )}
+                >
+                  {done ? "check" : icon}
+                </span>
               </div>
               <span
                 className={cn(
                   "font-body text-[10px] uppercase tracking-wider",
-                  active ? "text-primary font-semibold" : "text-text-muted"
+                  active ? "text-primary font-bold" : done ? "text-secondary" : "text-text-muted"
                 )}
               >
                 {label}
               </span>
             </div>
-            {i < steps.length - 1 && (
-              <div
-                className={cn(
-                  "h-px flex-1 -mt-4 transition-colors",
-                  done ? "bg-secondary" : "bg-border"
-                )}
-              />
-            )}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -124,9 +133,37 @@ export default function CheckoutPage() {
 
   async function handleConfirm() {
     setSubmitting(true);
+    const orderNum = "KC-" + Math.floor(10000 + Math.random() * 90000);
+
+    sessionStorage.setItem(
+      "last_order",
+      JSON.stringify({
+        orderNumber: orderNum,
+        items: items.map((item) => ({
+          name: item.name,
+          brand: item.brand,
+          size: item.size,
+          quantity: item.quantity,
+          price: item.price,
+          imageUrl: item.imageUrl ?? null,
+        })),
+        subtotal: total,
+        deliveryFee,
+        orderTotal,
+        upfront,
+        onDelivery,
+        deliveryMethod: form.deliveryMethod,
+        deliveryAddress:
+          form.deliveryMethod === "delivery"
+            ? `${form.district}, ${form.sector}`
+            : null,
+        phone: form.phone,
+      })
+    );
+
     await new Promise((r) => setTimeout(r, 1000));
     clearCart();
-    router.push("/checkout/confirmed?order=KC-" + Math.floor(10000 + Math.random() * 90000));
+    router.push(`/checkout/confirmed?order=${orderNum}`);
   }
 
   return (
@@ -269,56 +306,54 @@ export default function CheckoutPage() {
           {/* Step 2 — Payment */}
           {step === 2 && (
             <div className="flex flex-col gap-6">
-              <div className="border border-border bg-surface p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="material-symbols-outlined icon-outline text-[28px] text-secondary">
-                    payments
-                  </span>
-                  <div>
-                    <h3 className="font-heading text-base font-extrabold uppercase tracking-tight text-text">
-                      50/50 MoMo Payment
-                    </h3>
-                    <p className="font-body text-xs text-text-muted">
-                      Pay half now, half on delivery
+              {/* Orange accent line */}
+              <div className="h-0.5 bg-primary w-full" />
+
+              <div className="border border-border bg-surface">
+                <div className="px-6 pt-5 pb-6 flex flex-col gap-5">
+                  <h3 className="font-heading text-lg font-extrabold uppercase tracking-tight text-text">
+                    Payment: 50/50 MoMo
+                  </h3>
+
+                  {/* Pay now / Pay on arrival */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-surface-elevated border border-border p-4">
+                      <p className="font-body text-[10px] font-semibold uppercase tracking-[0.15em] text-text-muted mb-2">
+                        Pay Now (50%)
+                      </p>
+                      <p className="font-heading text-2xl font-extrabold text-primary">
+                        {formatPrice(upfront)}
+                      </p>
+                    </div>
+                    <div className="bg-surface-elevated border border-border p-4">
+                      <p className="font-body text-[10px] font-semibold uppercase tracking-[0.15em] text-text-muted mb-2">
+                        Pay on Arrival (50%)
+                      </p>
+                      <p className="font-heading text-2xl font-extrabold text-text">
+                        {formatPrice(onDelivery)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* USSD code */}
+                  <div className="bg-surface-elevated border border-border px-6 py-6 text-center flex flex-col items-center gap-5">
+                    <p className="font-body text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">
+                      Send Mobile Money To
                     </p>
+                    <p className="font-heading font-extrabold leading-none select-all" style={{ fontSize: "clamp(22px, 5vw, 40px)" }}>
+                      <span className="text-text">*182*8*1*</span>
+                      <span className="text-primary">0788000000#</span>
+                    </p>
+                    <div className="inline-flex items-center gap-2 bg-surface border border-border px-4 py-2.5">
+                      <span className="material-symbols-outlined icon-filled text-[14px] text-primary">
+                        info
+                      </span>
+                      <p className="font-body text-xs text-text-muted">
+                        Send MoMo then tap Confirm Order below.
+                      </p>
+                    </div>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="border border-primary/30 bg-primary/5 p-4 text-center">
-                    <p className="font-body text-xs text-text-muted uppercase tracking-wider mb-1">
-                      Pay Now
-                    </p>
-                    <p className="font-heading text-xl font-extrabold text-primary">
-                      {formatPrice(upfront)}
-                    </p>
-                  </div>
-                  <div className="border border-border p-4 text-center">
-                    <p className="font-body text-xs text-text-muted uppercase tracking-wider mb-1">
-                      On Delivery
-                    </p>
-                    <p className="font-heading text-xl font-extrabold text-text">
-                      {formatPrice(onDelivery)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-surface-elevated border border-border p-4 mb-4">
-                  <p className="font-body text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
-                    Send Mobile Money
-                  </p>
-                  <code className="font-body text-base text-secondary font-bold">
-                    *182*8*1*0788000000#
-                  </code>
-                  <p className="font-body text-xs text-text-muted mt-2">
-                    Amount: <span className="text-text font-semibold">{formatPrice(upfront)}</span>
-                  </p>
-                </div>
-
-                <p className="font-body text-xs text-text-muted">
-                  Send MoMo then tap Confirm Order below. We&apos;ll call you within
-                  30 minutes to confirm.
-                </p>
               </div>
 
               <div className="flex gap-3">

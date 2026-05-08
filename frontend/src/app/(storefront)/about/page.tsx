@@ -3,24 +3,24 @@ import Image from "next/image";
 
 const PILLARS = [
   {
-    icon: "verified",
-    title: "Authenticity First",
-    body: "Every pair sold on Kickcraft is inspected and verified. No fakes. No excuses.",
-  },
-  {
-    icon: "diversity_3",
-    title: "Community Driven",
-    body: "We elevate local sneaker culture — buyers, sellers, and collectors all in one place.",
+    icon: "storefront",
+    title: "Dedicated Store",
+    body: "A curated digital experience designed specifically for high-end drops, not a chaotic marketplace.",
   },
   {
     icon: "payments",
-    title: "Flexible Payments",
-    body: "50% upfront, 50% on delivery via MTN MoMo. No bank account needed.",
+    title: "50/50 MoMo",
+    body: "Flexible trust. Pay 50% upfront via Mobile Money to secure your pair, pay the rest upon delivery.",
+  },
+  {
+    icon: "star",
+    title: "Real Reviews",
+    body: "Transparency first. Unfiltered feedback from verified buyers to ensure you know exactly what you're getting.",
   },
   {
     icon: "local_shipping",
-    title: "Kigali Fast",
-    body: "Same-day delivery across Kigali. Our riders know the city better than anyone.",
+    title: "Delivery Network",
+    body: "Swift, secure, and trackable delivery directly to your location in Kigali and beyond.",
   },
 ];
 
@@ -28,70 +28,71 @@ export default function AboutPage() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-surface-elevated border-b border-border px-5 md:px-8 py-20 md:py-28">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-linear-to-br from-primary/10 via-transparent to-transparent pointer-events-none" />
-        <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
-
+      <section className="relative overflow-hidden bg-background border-b border-border px-5 md:px-8 py-24 md:py-36 text-center">
+        {/* Vertical lines texture — matches Stitch design */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(90deg, transparent 0px, transparent 39px, rgba(229,226,225,0.04) 39px, rgba(229,226,225,0.04) 40px)",
+          }}
+          aria-hidden="true"
+        />
         <div className="relative mx-auto max-w-container">
-          <p className="font-body text-xs font-bold uppercase tracking-[0.2em] text-primary mb-3">
-            Our Story
+          <p className="font-body text-xs font-bold uppercase tracking-[0.25em] text-primary mb-6">
+            The Kickcraft Origin
           </p>
-          <h1 className="font-heading text-5xl md:text-7xl font-extrabold uppercase tracking-tight text-text leading-none mb-6">
-            Built in
+          <h1 className="font-heading text-5xl md:text-7xl lg:text-8xl font-extrabold uppercase tracking-tight text-text leading-[1.05]">
+            Built in Kigali.
             <br />
-            <span className="text-primary">Kigali.</span>
+            Built to Last.
+            <br />
+            Built to Win.
           </h1>
-          <p className="font-body text-base md:text-lg text-text-muted leading-relaxed max-w-lg">
-            Kickcraft was born from a simple frustration: finding authentic sneakers
-            in Kigali was either impossible or required paying 3× the real price to
-            a middleman. We decided to fix that.
-          </p>
         </div>
       </section>
 
       {/* Origin story */}
-      <section className="py-20 px-5 md:px-8 border-b border-border">
+      <section className="py-20 px-5 md:px-8 border-b border-border bg-surface-elevated">
         <div className="mx-auto max-w-container grid md:grid-cols-2 gap-10 lg:gap-16 items-center">
           {/* Text */}
           <div>
-            <p className="font-body text-xs font-semibold uppercase tracking-[0.15em] text-primary mb-2">
-              How it started
-            </p>
-            <h2 className="font-heading text-3xl md:text-4xl font-extrabold uppercase tracking-tight text-text mb-5">
-              From WhatsApp Group<br />to Full Platform
-            </h2>
-            <div className="font-body text-sm text-text-muted leading-relaxed space-y-4 max-w-md">
+            <div className="border-l-4 border-primary pl-5">
+              <h2 className="font-heading text-3xl md:text-4xl font-extrabold uppercase tracking-tight text-text leading-tight">
+                The Hustle
+                <br />
+                Was Real
+              </h2>
+            </div>
+            <div className="font-body text-sm text-text-muted leading-relaxed space-y-4 mt-6 max-w-md">
               <p>
-                It started as a WhatsApp group. A few friends, a shared love of
-                sneakers, and too much time spent hunting for the right pair across
-                five different resellers with inconsistent prices.
+                Finding authentic, high-end sneakers in Kigali used to mean
+                rolling the dice. Navigating crowded markets, dealing with
+                inconsistent pricing, and risking your hard-earned money on
+                fakes was the standard.
               </p>
-              <p>
-                We started pooling our finds — posting real photos, real prices, real
-                sizes — and within weeks the group had 200+ members who felt the same
-                way we did.
-              </p>
-              <p>
-                Kickcraft is that WhatsApp group, but grown up. A proper marketplace
-                with verified stock, fast delivery, and payments built for Rwanda.
+              <p>We lived that frustration. So we built the solution.</p>
+              <p className="text-text-muted/70">
+                Kickcraft isn&apos;t just a store; it&apos;s a standard. We
+                guarantee authenticity, provide transparent pricing, and deliver
+                directly to your door. No stress, just heat.
               </p>
             </div>
           </div>
 
-          {/* Image */}
-          <div className="relative aspect-[4/3] rounded border border-border overflow-hidden bg-surface-elevated">
+          {/* Image — uses the actual Stitch About page photo */}
+          <div className="relative aspect-4/3 rounded-sm border border-border overflow-hidden bg-surface">
             <Image
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvLFmBfnNVA9bJijjZph__8KpuIvMmO4Y2TAmqT9GLMhGuAXmCJ27BIddwZ3Qq-bh8cbstcbPyyB-ZtzHwv6LRRTcLb6_jl49bQQpiFVr8jOHLjq1PqdXXGZw3I2j-kX2spGaq4aaS2rXpssMaV6ZmTIw_97lfVIe0ChNkWG885HhTqm8sPsKbqz6MMbJtMkhCVHqrQsj8MODDT1qEbgrqWkk3fDiBdzEDH9zpFamsUOFrc8WPpYt2vmJvFozIjEY3BGu1-zwLiLIN"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5sjw4u7yVhUa7HmtviUYddVArv_7obv6egfnb5MQpJl_AF_YO_-QJLBjJhkzaHfYFGDozrY9atNJFFb4iO2UKOst2EN36ib-VKIyIeTuERHhenNhw8IhwFVaYy6vKH5ldRndC8481lJzCIC39XKC1mEgKEhoRJfO048KEZpByyEb9LMqYCFV2YaP4vOrhi9PTTCmxf_AJOPw8U_F9kGPOpnQtWzg-elJB4xltuMkk-AHMs7xgKlVERDKt4bZoIyH4NwG9LchCyfpY"
               alt="Kickcraft shoes"
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
             />
-            <div className="absolute inset-0 bg-linear-to-t from-background/60 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-background/70 via-transparent to-transparent" />
             <div className="absolute bottom-4 left-4">
-              <span className="bg-primary text-white font-body text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded">
-                Est. Kigali, 2024
+              <span className="bg-surface/90 text-text font-body text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 border border-border">
+                Established 2024
               </span>
             </div>
           </div>
@@ -99,60 +100,58 @@ export default function AboutPage() {
       </section>
 
       {/* Mission & Vision */}
-      <section className="py-20 px-5 md:px-8 border-b border-border bg-surface-elevated">
-        <div className="mx-auto max-w-container grid md:grid-cols-2 gap-8">
-          <div className="border border-border rounded p-8">
-            <span className="material-symbols-outlined icon-outline text-[32px] text-primary block mb-4">
+      <section className="py-20 px-5 md:px-8 border-b border-border bg-background">
+        <div className="mx-auto max-w-container grid md:grid-cols-2 gap-px bg-border">
+          <div className="bg-surface p-8 md:p-12">
+            <span className="material-symbols-outlined icon-outline text-[28px] text-primary block mb-5">
               flag
             </span>
-            <h3 className="font-heading text-xl font-extrabold uppercase tracking-tight text-text mb-3">
+            <h3 className="font-heading text-lg font-extrabold uppercase tracking-tight text-text mb-3">
               Our Mission
             </h3>
             <p className="font-body text-sm text-text-muted leading-relaxed">
-              Make it effortless for Rwandans to buy and sell authentic sneakers at
-              fair prices — with a payment system built for how people actually pay
-              here.
+              To elevate sneaker culture in East Africa by providing
+              uncompromising access to authentic, premium footwear through a
+              seamless, trust-first platform.
             </p>
           </div>
-          <div className="border border-border rounded p-8">
-            <span className="material-symbols-outlined icon-outline text-[32px] text-secondary block mb-4">
+          <div className="bg-surface p-8 md:p-12">
+            <span className="material-symbols-outlined icon-outline text-[28px] text-primary block mb-5">
               visibility
             </span>
-            <h3 className="font-heading text-xl font-extrabold uppercase tracking-tight text-text mb-3">
+            <h3 className="font-heading text-lg font-extrabold uppercase tracking-tight text-text mb-3">
               Our Vision
             </h3>
             <p className="font-body text-sm text-text-muted leading-relaxed">
-              Be the definitive sneaker destination for East Africa — a platform where
-              local sneaker culture is celebrated, not imitated from elsewhere.
+              To become the definitive authority and destination for streetwear
+              and high-end sneakers across the continent, defining the standard
+              for retail excellence.
             </p>
           </div>
         </div>
       </section>
 
-      {/* 4 Pillars */}
-      <section className="py-20 px-5 md:px-8 border-b border-border">
+      {/* 4 Pillars — The Kickcraft Standard */}
+      <section className="py-20 px-5 md:px-8 border-b border-border bg-surface-elevated">
         <div className="mx-auto max-w-container">
-          <div className="text-center mb-12">
-            <p className="font-body text-xs font-semibold uppercase tracking-[0.15em] text-primary mb-2">
-              What we stand for
-            </p>
-            <h2 className="font-heading text-3xl md:text-4xl font-extrabold uppercase tracking-tight text-text">
-              The Kickcraft Way
+          <div className="text-center mb-14">
+            <h2 className="font-heading text-3xl md:text-4xl font-extrabold uppercase tracking-tight text-text mb-3">
+              The Kickcraft Standard
             </h2>
+            <p className="font-body text-sm text-text-muted">
+              Why we operate differently from the rest of the market.
+            </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-border">
             {PILLARS.map(({ icon, title, body }) => (
-              <div
-                key={title}
-                className="border border-border rounded p-6 bg-surface hover:border-outline transition-colors duration-200"
-              >
-                <span className="material-symbols-outlined icon-outline text-[32px] text-primary block mb-4">
+              <div key={title} className="bg-surface p-6 md:p-8">
+                <span className="material-symbols-outlined icon-outline text-[24px] text-primary block mb-4">
                   {icon}
                 </span>
-                <h3 className="font-heading text-base font-extrabold uppercase tracking-tight text-text mb-2">
+                <h3 className="font-heading text-sm font-extrabold uppercase tracking-tight text-text mb-2">
                   {title}
                 </h3>
-                <p className="font-body text-sm text-text-muted leading-relaxed">
+                <p className="font-body text-xs text-text-muted leading-relaxed">
                   {body}
                 </p>
               </div>
@@ -162,31 +161,24 @@ export default function AboutPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-5 md:px-8 text-center">
+      <section className="py-24 px-5 md:px-8 text-center bg-background">
         <div className="mx-auto max-w-container">
-          <h2 className="font-heading text-3xl md:text-4xl font-extrabold uppercase tracking-tight text-text mb-4">
-            Ready to cop?
+          <h2 className="font-heading text-3xl md:text-5xl font-extrabold uppercase tracking-tight text-text mb-4">
+            Ready to Shop?
           </h2>
-          <p className="font-body text-sm text-text-muted mb-8 max-w-sm mx-auto">
-            Browse the freshest kicks in Kigali. Free delivery on orders above 20,000 RWF.
+          <p className="font-body text-sm text-text-muted mb-10 max-w-sm mx-auto">
+            Experience the new standard of sneaker shopping in Rwanda. Secure
+            your next pair today.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/shop"
-              className="inline-flex items-center gap-2 bg-primary text-white font-body font-semibold text-sm uppercase tracking-wider px-8 py-3 rounded hover:bg-primary-inverse active:scale-95 transition-all duration-200"
-            >
-              Shop Now
-              <span className="material-symbols-outlined icon-outline text-[16px]">
-                arrow_forward
-              </span>
-            </Link>
-            <Link
-              href="/contact"
-              className="inline-flex items-center gap-2 border border-border text-text font-body font-semibold text-sm uppercase tracking-wider px-8 py-3 rounded hover:border-primary hover:text-primary transition-colors duration-200"
-            >
-              Get in Touch
-            </Link>
-          </div>
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-2 bg-primary text-white font-body font-bold text-sm uppercase tracking-wider px-10 py-4 hover:bg-primary-inverse active:scale-95 transition-all duration-200"
+          >
+            Shop Now
+            <span className="material-symbols-outlined icon-outline text-[16px]">
+              arrow_forward
+            </span>
+          </Link>
         </div>
       </section>
     </div>
