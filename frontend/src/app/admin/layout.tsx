@@ -3,15 +3,41 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
+import { useMyOrders } from "@/hooks/api/use-orders";
 import { cn } from "@/lib/utils";
 import { useEffect, useCallback, useState } from "react";
 
-const navItems = [
-  { label: "Dashboard", href: "/admin/dashboard", icon: "dashboard" },
-  { label: "Products", href: "/admin/products", icon: "inventory_2" },
-  { label: "Orders", href: "/admin/orders", icon: "receipt_long" },
-  { label: "Deliveries", href: "/admin/deliveries", icon: "local_shipping" },
-  { label: "Users", href: "/admin/users", icon: "group" },
+const NAV_SECTIONS = [
+  {
+    label: "Overview",
+    items: [
+      { label: "Dashboard", href: "/admin/dashboard", icon: "dashboard" },
+      { label: "Analytics", href: "/admin/analytics", icon: "monitoring" },
+    ],
+  },
+  {
+    label: "Catalog",
+    items: [
+      { label: "Products", href: "/admin/products", icon: "inventory_2" },
+      { label: "Inventory", href: "/admin/inventory", icon: "warehouse" },
+    ],
+  },
+  {
+    label: "Commerce",
+    items: [
+      { label: "Orders", href: "/admin/orders", icon: "receipt_long", badgeKey: "pending" },
+      { label: "Customers", href: "/admin/users", icon: "group" },
+      { label: "Reviews", href: "/admin/reviews", icon: "reviews", badgeKey: "reviews" },
+      { label: "Discounts", href: "/admin/discounts", icon: "sell" },
+      { label: "Deliveries", href: "/admin/deliveries", icon: "local_shipping" },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { label: "Settings", href: "/admin/settings", icon: "settings" },
+    ],
+  },
 ];
 
 function getInitials(name: string): string {
@@ -23,15 +49,15 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: orders } = useMyOrders();
+
+  const pendingCount = (orders ?? []).filter((o) => o.status === "pending").length;
+  const MOCK_REVIEW_COUNT = 3;
 
   useEffect(() => {
     if (!isLoading) {
@@ -48,98 +74,133 @@ export default function AdminLayout({
     router.replace("/");
   }, [logout, router]);
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
   if (isLoading || !user || user.role !== "admin") return null;
+
+  function getBadge(key?: string): number {
+    if (key === "pending") return pendingCount;
+    if (key === "reviews") return MOCK_REVIEW_COUNT;
+    return 0;
+  }
 
   const Sidebar = (
     <aside className="flex w-60 shrink-0 flex-col border-r border-border bg-surface h-full">
       {/* Logo */}
-      <div className="px-5 py-6 border-b border-border flex items-center justify-between">
-        <div>
-          <Link
-            href="/"
-            className="font-heading text-xl font-extrabold italic uppercase text-primary"
-          >
-            KICKCRAFT
-          </Link>
-          <p className="font-body text-[10px] text-text-muted uppercase tracking-[0.12em] mt-0.5">
-            Admin Panel
-          </p>
+      <div className="px-5 py-4 border-b border-border">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-primary flex items-center justify-center shrink-0">
+            <span className="font-heading text-xs font-extrabold text-white">KC</span>
+          </div>
+          <div>
+            <Link href="/" className="font-heading text-sm font-extrabold italic uppercase text-text">
+              KickCraft
+            </Link>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="font-body text-[9px] font-bold uppercase tracking-[0.15em] text-text-muted">
+                Admin
+              </span>
+              <span className="w-1 h-1 rounded-full bg-secondary inline-block" />
+              <span className="font-body text-[9px] font-bold uppercase tracking-[0.15em] text-secondary">
+                Live
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
-        {navItems.map(({ label, href, icon }) => {
-          const active =
-            href === "/admin/dashboard"
-              ? pathname === href
-              : pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 font-body text-sm font-semibold rounded-sm transition-all duration-150",
-                active
-                  ? "bg-primary/10 text-primary"
-                  : "text-text-muted hover:text-text hover:bg-surface-elevated"
-              )}
-            >
-              <span
-                className={cn(
-                  "material-symbols-outlined text-[20px] transition-none",
-                  active ? "icon-fill" : "icon-outline"
-                )}
-              >
-                {icon}
-              </span>
-              {label}
-              {active && (
-                <span className="ml-auto w-1 h-4 rounded-full bg-primary" />
-              )}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 px-3 py-3 overflow-y-auto flex flex-col gap-4">
+        {NAV_SECTIONS.map((section) => (
+          <div key={section.label}>
+            <p className="font-body text-[9px] font-bold uppercase tracking-[0.2em] text-text-muted/40 px-3 mb-1">
+              {section.label}
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {section.items.map(({ label, href, icon, badgeKey }) => {
+                const active =
+                  href === "/admin/dashboard"
+                    ? pathname === href
+                    : pathname.startsWith(href);
+                const badge = getBadge(badgeKey);
+
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 font-body text-sm font-semibold transition-all duration-150 group",
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-text-muted hover:text-text hover:bg-surface-elevated"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "material-symbols-outlined text-[17px] transition-none shrink-0",
+                        active ? "icon-filled" : "icon-outline"
+                      )}
+                    >
+                      {icon}
+                    </span>
+                    <span className="flex-1 text-[13px]">{label}</span>
+                    {badge > 0 && (
+                      <span
+                        className={cn(
+                          "min-w-[18px] h-[18px] flex items-center justify-center rounded-full font-body text-[10px] font-bold px-1",
+                          badgeKey === "reviews"
+                            ? "bg-secondary/20 text-secondary"
+                            : "bg-primary text-white"
+                        )}
+                      >
+                        {badge > 99 ? "99+" : badge}
+                      </span>
+                    )}
+                    {active && badge === 0 && (
+                      <span className="w-1 h-3.5 bg-primary shrink-0" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-4 border-t border-border flex flex-col gap-0.5">
-        {/* User */}
-        <div className="flex items-center gap-3 px-3 py-2.5 mb-1">
+      <div className="px-3 py-3 border-t border-border space-y-0.5">
+        <Link
+          href="/"
+          className="flex items-center gap-3 px-3 py-2 font-body text-[13px] text-text-muted hover:text-primary hover:bg-surface-elevated transition-all duration-150"
+        >
+          <span className="material-symbols-outlined icon-outline text-[17px] shrink-0">storefront</span>
+          View Store
+        </Link>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2 font-body text-[13px] text-text-muted hover:text-error hover:bg-surface-elevated transition-all duration-150 w-full text-left"
+        >
+          <span className="material-symbols-outlined icon-outline text-[17px] shrink-0">logout</span>
+          Sign Out
+        </button>
+
+        {/* User block */}
+        <div className="flex items-center gap-3 px-3 py-3 mt-1 border-t border-border">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
             <span className="font-heading text-xs font-extrabold text-white">
               {getInitials(user.name)}
             </span>
           </div>
-          <div className="min-w-0">
-            <p className="font-body text-xs font-semibold text-text truncate">
-              {user.name}
-            </p>
-            <p className="font-body text-[10px] text-text-muted uppercase tracking-wider">
-              Admin
-            </p>
+          <div className="min-w-0 flex-1">
+            <p className="font-body text-xs font-semibold text-text truncate">{user.name}</p>
+            <p className="font-body text-[9px] text-text-muted truncate">{user.email}</p>
           </div>
+          <span className="shrink-0 px-1.5 py-0.5 bg-primary/10 font-body text-[9px] font-bold uppercase tracking-wider text-primary">
+            Admin
+          </span>
         </div>
-
-        <Link
-          href="/"
-          className="flex items-center gap-3 px-3 py-2 font-body text-sm text-text-muted hover:text-primary hover:bg-surface-elevated rounded-sm transition-all duration-150"
-        >
-          <span className="material-symbols-outlined icon-outline text-[18px]">
-            storefront
-          </span>
-          View Store
-        </Link>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2 font-body text-sm text-text-muted hover:text-error hover:bg-surface-elevated rounded-sm transition-all duration-150 w-full text-left"
-        >
-          <span className="material-symbols-outlined icon-outline text-[18px]">
-            logout
-          </span>
-          Sign Out
-        </button>
       </div>
     </aside>
   );
@@ -151,16 +212,14 @@ export default function AdminLayout({
         {Sidebar}
       </div>
 
-      {/* Mobile sidebar overlay */}
+      {/* Mobile overlay */}
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
           <div
             className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="relative z-10 flex w-60">
-            {Sidebar}
-          </div>
+          <div className="relative z-10 flex w-60">{Sidebar}</div>
         </div>
       )}
 
@@ -168,22 +227,23 @@ export default function AdminLayout({
       <main className="flex-1 md:ml-60 min-h-screen bg-background">
         {/* Mobile header */}
         <div className="md:hidden flex items-center justify-between px-5 py-4 border-b border-border bg-surface sticky top-0 z-30">
-          <Link
-            href="/"
-            className="font-heading text-lg font-extrabold italic uppercase text-primary"
-          >
-            KICKCRAFT
-          </Link>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 bg-primary flex items-center justify-center">
+              <span className="font-heading text-[10px] font-extrabold text-white">KC</span>
+            </div>
+            <Link href="/" className="font-heading text-base font-extrabold italic uppercase text-text">
+              KickCraft
+            </Link>
+          </div>
           <button
             onClick={() => setMobileOpen(true)}
             className="p-2 text-text-muted hover:text-text transition-colors"
             aria-label="Open menu"
           >
-            <span className="material-symbols-outlined icon-outline text-[22px]">
-              menu
-            </span>
+            <span className="material-symbols-outlined icon-outline text-[22px]">menu</span>
           </button>
         </div>
+
         <div className="p-5 md:p-8">{children}</div>
       </main>
     </div>

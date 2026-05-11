@@ -1,120 +1,321 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useMyOrders } from "@/hooks/api/use-orders";
 import { OrderStatusBadge } from "@/components/ui/order-status-badge";
 import { Spinner } from "@/components/ui/spinner";
 import { formatPrice, formatDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import type { Order } from "@/types/api/orders";
 
-export default function AdminDeliveriesPage() {
-  const { data: orders, isLoading, isError } = useMyOrders();
+const MOCK_AGENTS = [
+  { id: "a1", name: "Eric Nshimiyimana", phone: "250788100001", active: true },
+  { id: "a2", name: "Patrick Habimana", phone: "250788100002", active: true },
+  { id: "a3", name: "Yvonne Mukamana", phone: "250788100003", active: false },
+];
 
-  const deliveryOrders = (orders ?? []).filter(
-    (o) =>
-      o.deliveryMethod === "delivery" &&
-      (o.status === "confirmed" || o.status === "out_for_delivery")
+type Tab = "queued" | "active";
+
+function AgentBadge({ agentId }: { agentId?: string }) {
+  const agent = agentId ? MOCK_AGENTS.find((a) => a.id === agentId) : null;
+  if (!agent) return null;
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="w-5 h-5 bg-secondary/20 flex items-center justify-center">
+        <span className="font-heading text-[10px] font-extrabold text-secondary">
+          {agent.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+        </span>
+      </div>
+      <span className="font-body text-xs text-text-muted">{agent.name.split(" ")[0]}</span>
+    </div>
   );
+}
+
+function DeliveryCard({
+  order,
+  assigned,
+  onAssign,
+}: {
+  order: Order;
+  assigned?: string;
+  onAssign: (orderId: string, agentId: string) => void;
+}) {
+  const [showAssign, setShowAssign] = useState(false);
+  const agent = assigned ? MOCK_AGENTS.find((a) => a.id === assigned) : null;
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="font-heading text-2xl font-extrabold uppercase tracking-tight text-text">
-          Deliveries
-        </h1>
-        <p className="font-body text-sm text-text-muted mt-1">
-          Active home delivery orders
-        </p>
+    <div
+      className={cn(
+        "border bg-surface transition-colors",
+        order.status === "out_for_delivery"
+          ? "border-l-4 border-l-[#ffb5a0] border-border"
+          : "border-border"
+      )}
+    >
+      {/* Card header */}
+      <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-border">
+        <div>
+          <Link
+            href={`/admin/orders/${order.id}`}
+            className="font-heading text-sm font-extrabold uppercase tracking-tight text-text hover:text-primary transition-colors"
+          >
+            #{order.orderToken}
+          </Link>
+          <p className="font-body text-[10px] text-text-muted mt-0.5">
+            {formatDate(order.createdAt)}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {agent && <AgentBadge agentId={assigned} />}
+          <OrderStatusBadge status={order.status} />
+        </div>
       </div>
 
+      {/* Body */}
+      <div className="px-5 py-4 space-y-2.5">
+        <div className="flex items-start gap-2">
+          <span className="material-symbols-outlined icon-outline text-[15px] text-text-muted mt-0.5 shrink-0">
+            location_on
+          </span>
+          <p className="font-body text-sm text-text leading-snug">
+            {order.deliveryAddress ?? "No address provided"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined icon-outline text-[15px] text-text-muted shrink-0">
+            phone
+          </span>
+          <p className="font-body text-sm text-text">+{order.phone}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined icon-outline text-[15px] text-text-muted shrink-0">
+            payments
+          </span>
+          <p className="font-body text-sm text-text">
+            Collect on delivery:{" "}
+            <span className="font-semibold text-primary">
+              {formatPrice(Math.floor(order.total / 2))}
+            </span>
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined icon-outline text-[15px] text-text-muted shrink-0">
+            inventory_2
+          </span>
+          <p className="font-body text-sm text-text">
+            {order.items.length} {order.items.length === 1 ? "item" : "items"}
+          </p>
+        </div>
+      </div>
+
+      {/* Assign agent dropdown */}
+      {showAssign && (
+        <div className="px-5 pb-4">
+          <p className="font-body text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2">
+            Assign Agent
+          </p>
+          <div className="space-y-1">
+            {MOCK_AGENTS.filter((a) => a.active).map((a) => (
+              <button
+                key={a.id}
+                onClick={() => {
+                  onAssign(order.id, a.id);
+                  setShowAssign(false);
+                }}
+                className="flex items-center justify-between w-full px-3 py-2 border border-border hover:border-outline hover:bg-surface-elevated transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 bg-secondary/20 flex items-center justify-center">
+                    <span className="font-heading text-[10px] font-extrabold text-secondary">
+                      {a.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                    </span>
+                  </div>
+                  <span className="font-body text-sm font-semibold text-text">{a.name}</span>
+                </div>
+                <span className="font-body text-xs text-text-muted">+{a.phone}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="px-5 py-3.5 border-t border-border flex flex-wrap gap-2">
+        <a
+          href={`https://wa.me/${order.phone}?text=${encodeURIComponent(
+            `Hi! Kickcraft here. Your order #${order.orderToken} is on its way!`
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 border border-secondary/40 px-3 py-1.5 font-body text-xs font-semibold uppercase tracking-wider text-secondary hover:bg-secondary/10 transition-colors"
+        >
+          <span className="material-symbols-outlined icon-outline text-[14px]">chat</span>
+          Notify
+        </a>
+
+        {!agent && (
+          <button
+            onClick={() => setShowAssign((v) => !v)}
+            className="flex items-center gap-1.5 border border-border px-3 py-1.5 font-body text-xs font-semibold uppercase tracking-wider text-text-muted hover:text-text hover:border-outline transition-colors"
+          >
+            <span className="material-symbols-outlined icon-outline text-[14px]">person_add</span>
+            Assign Agent
+          </button>
+        )}
+
+        {order.status === "confirmed" && (
+          <button className="flex items-center gap-1.5 bg-primary text-white px-3 py-1.5 font-body text-xs font-semibold uppercase tracking-wider hover:bg-primary-inverse transition-colors ml-auto">
+            <span className="material-symbols-outlined icon-filled text-[14px]">local_shipping</span>
+            Out for Delivery
+          </button>
+        )}
+        {order.status === "out_for_delivery" && (
+          <button className="flex items-center gap-1.5 bg-secondary text-background px-3 py-1.5 font-body text-xs font-semibold uppercase tracking-wider hover:opacity-90 transition-opacity ml-auto">
+            <span className="material-symbols-outlined icon-filled text-[14px]">where_to_vote</span>
+            Mark Delivered
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function AdminDeliveriesPage() {
+  const [tab, setTab] = useState<Tab>("queued");
+  const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const { data: orders, isLoading, isError } = useMyOrders();
+
+  const deliveryOrders = (orders ?? []).filter((o) => o.deliveryMethod === "delivery");
+  const queued = deliveryOrders.filter((o) => o.status === "confirmed");
+  const active = deliveryOrders.filter((o) => o.status === "out_for_delivery");
+
+  const handleAssign = (orderId: string, agentId: string) => {
+    setAssignments((prev) => ({ ...prev, [orderId]: agentId }));
+  };
+
+  const displayed = tab === "queued" ? queued : active;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="font-body text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted">
+            Management
+          </p>
+          <h1 className="font-heading text-2xl font-extrabold uppercase tracking-tight text-text mt-0.5">
+            Deliveries
+          </h1>
+        </div>
+
+        <div className="hidden md:flex items-center gap-6">
+          <div className="text-right">
+            <p className="font-heading text-lg font-extrabold text-primary">{queued.length}</p>
+            <p className="font-body text-[10px] uppercase tracking-wider text-text-muted">Queued</p>
+          </div>
+          <div className="w-px h-8 bg-border" />
+          <div className="text-right">
+            <p className="font-heading text-lg font-extrabold text-[#ffb5a0]">{active.length}</p>
+            <p className="font-body text-[10px] uppercase tracking-wider text-text-muted">In Transit</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Agents row */}
+      <div className="border border-border bg-surface p-4">
+        <p className="font-body text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-3">
+          Delivery Agents
+        </p>
+        <div className="flex flex-wrap gap-3">
+          {MOCK_AGENTS.map((agent) => (
+            <div key={agent.id} className="flex items-center gap-2.5 border border-border px-3 py-2">
+              <div
+                className={cn(
+                  "w-7 h-7 flex items-center justify-center font-heading text-xs font-extrabold",
+                  agent.active ? "bg-secondary/20 text-secondary" : "bg-surface-elevated text-text-muted"
+                )}
+              >
+                {agent.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+              </div>
+              <div>
+                <p className="font-body text-xs font-semibold text-text">{agent.name.split(" ")[0]}</p>
+                <p className="font-body text-[10px] text-text-muted">+{agent.phone}</p>
+              </div>
+              <span
+                className={cn(
+                  "ml-1 w-1.5 h-1.5 rounded-full",
+                  agent.active ? "bg-secondary" : "bg-surface-high"
+                )}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2">
+        {(["queued", "active"] as Tab[]).map((t) => {
+          const count = t === "queued" ? queued.length : active.length;
+          return (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn(
+                "flex items-center gap-2 px-3.5 py-1.5 font-body text-xs font-semibold uppercase tracking-wider border transition-all duration-150",
+                tab === t
+                  ? "bg-primary text-white border-primary"
+                  : "bg-surface text-text-muted border-border hover:text-text hover:border-outline"
+              )}
+            >
+              {t === "queued" ? "Queued" : "In Transit"}
+              {count > 0 && (
+                <span
+                  className={cn(
+                    "min-w-[18px] h-[18px] flex items-center justify-center font-body text-[10px] font-bold px-1",
+                    tab === t ? "bg-white/20 text-white" : "bg-primary text-white"
+                  )}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Content */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <Spinner size="lg" className="text-primary" />
         </div>
       ) : isError ? (
-        <p className="font-body text-sm text-error py-8">Failed to load</p>
-      ) : deliveryOrders.length === 0 ? (
-        <div className="border border-border bg-surface p-10 text-center">
-          <span className="material-symbols-outlined icon-outline text-[48px] text-text-muted/30 mb-3 block">
-            local_shipping
+        <div className="border border-error/30 bg-error/5 px-5 py-4">
+          <p className="font-body text-sm text-error">Failed to load deliveries</p>
+        </div>
+      ) : displayed.length === 0 ? (
+        <div className="border border-border bg-surface p-12 text-center">
+          <span className="material-symbols-outlined icon-outline text-[48px] text-text-muted/20 block mb-3">
+            {tab === "queued" ? "pending_actions" : "local_shipping"}
           </span>
-          <p className="font-body text-sm text-text-muted">
-            No active deliveries
+          <p className="font-heading text-sm font-extrabold uppercase tracking-tight text-text mb-1">
+            {tab === "queued" ? "No queued deliveries" : "Nothing in transit"}
+          </p>
+          <p className="font-body text-xs text-text-muted">
+            {tab === "queued"
+              ? "Confirmed delivery orders will appear here"
+              : "Orders marked out for delivery will appear here"}
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          {deliveryOrders.map((order) => (
-            <div
+        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {displayed.map((order) => (
+            <DeliveryCard
               key={order.id}
-              className="border border-border bg-surface p-5"
-            >
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <div>
-                  <Link
-                    href={`/admin/orders/${order.id}`}
-                    className="font-heading text-sm font-extrabold uppercase tracking-tight text-text hover:text-primary transition-colors"
-                  >
-                    #{order.orderToken}
-                  </Link>
-                  <p className="font-body text-xs text-text-muted mt-0.5">
-                    {formatDate(order.createdAt)}
-                  </p>
-                </div>
-                <OrderStatusBadge status={order.status} />
-              </div>
-
-              <div className="flex flex-col gap-2 mb-4">
-                <div className="flex items-center gap-2 font-body text-sm text-text-muted">
-                  <span className="material-symbols-outlined icon-outline text-[16px]">
-                    location_on
-                  </span>
-                  <span className="text-text">
-                    {order.deliveryAddress ?? "—"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 font-body text-sm text-text-muted">
-                  <span className="material-symbols-outlined icon-outline text-[16px]">
-                    phone
-                  </span>
-                  <span className="text-text">+{order.phone}</span>
-                </div>
-                <div className="flex items-center gap-2 font-body text-sm text-text-muted">
-                  <span className="material-symbols-outlined icon-outline text-[16px]">
-                    payments
-                  </span>
-                  <span className="text-text">
-                    Due on delivery:{" "}
-                    <span className="text-primary font-semibold">
-                      {formatPrice(Math.floor(order.total / 2))}
-                    </span>
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <a
-                  href={`https://wa.me/${order.phone}?text=${encodeURIComponent(`Hi! Kickcraft here. Your order #${order.orderToken} is on its way!`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 border border-secondary px-3 py-1.5 font-body text-xs font-semibold uppercase tracking-wider text-secondary hover:bg-secondary/10 transition-colors"
-                >
-                  <span className="material-symbols-outlined icon-outline text-[14px]">
-                    chat
-                  </span>
-                  Notify Customer
-                </a>
-                {order.status === "confirmed" && (
-                  <button className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 font-body text-xs font-semibold uppercase tracking-wider hover:bg-primary-inverse transition-colors">
-                    Mark Out for Delivery
-                  </button>
-                )}
-                {order.status === "out_for_delivery" && (
-                  <button className="flex items-center gap-1 bg-secondary text-background px-3 py-1.5 font-body text-xs font-semibold uppercase tracking-wider hover:opacity-90 transition-opacity">
-                    Mark Delivered
-                  </button>
-                )}
-              </div>
-            </div>
+              order={order}
+              assigned={assignments[order.id]}
+              onAssign={handleAssign}
+            />
           ))}
         </div>
       )}
