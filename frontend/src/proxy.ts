@@ -2,10 +2,15 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getUserFromPayload, isTokenExpired, parseJwt } from "@/lib/auth";
 
-const publicRoutes = [
+// Redirect logged-in users away (they're already authed)
+const authRedirectRoutes = [
   "/auth/login",
   "/auth/register",
   "/auth/forgot-password",
+];
+
+// Token-based flows — always accessible regardless of auth state
+const tokenRoutes = [
   "/auth/verify-email",
   "/auth/reset-password",
   "/auth/confirm-password-change",
@@ -44,8 +49,14 @@ function isAdminRoute(pathname: string): boolean {
   );
 }
 
-function isPublicRoute(pathname: string): boolean {
-  return publicRoutes.includes(pathname);
+function isAuthRedirectRoute(pathname: string): boolean {
+  return authRedirectRoutes.includes(pathname);
+}
+
+function isTokenRoute(pathname: string): boolean {
+  return tokenRoutes.some(
+    (r) => pathname === r || pathname.startsWith(`${r}/`)
+  );
 }
 
 export function proxy(request: NextRequest) {
@@ -55,7 +66,11 @@ export function proxy(request: NextRequest) {
   const payload = token && !isTokenExpired(token) ? parseJwt(token) : null;
   const user = payload ? getUserFromPayload(payload) : null;
 
-  if (isPublicRoute(pathname)) {
+  if (isTokenRoute(pathname)) {
+    return NextResponse.next();
+  }
+
+  if (isAuthRedirectRoute(pathname)) {
     if (user) {
       const dest = user.role === "admin" ? "/admin/dashboard" : "/";
       return NextResponse.redirect(new URL(dest, request.url));

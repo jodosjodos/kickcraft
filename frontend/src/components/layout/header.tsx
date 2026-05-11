@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/providers/auth-provider";
+import { useLogout } from "@/hooks/api/use-auth";
 import { useCart } from "@/providers/cart-provider";
 import { useWishlist } from "@/providers/wishlist-provider";
 import { Icon } from "@/components/ui/icon";
@@ -20,8 +21,8 @@ const navLinks = [
 
 export function Header() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const logoutMutation = useLogout();
   const { itemCount } = useCart();
   const { count: wishlistCount } = useWishlist();
 
@@ -33,9 +34,8 @@ export function Header() {
 
   const handleLogout = useCallback(() => {
     setDropdownOpen(false);
-    logout();
-    router.push("/");
-  }, [logout, router]);
+    logoutMutation.mutate();
+  }, [logoutMutation]);
 
   useEffect(() => {
     if (!dropdownOpen) return;

@@ -44,7 +44,18 @@ export default function AccountLayout({
     <div className="bg-background min-h-screen">
       {/* Top banner */}
       <div className="border-b border-border bg-surface">
-        <div className="mx-auto max-w-container px-5 md:px-8 py-6 flex items-center gap-4">
+        <div className="mx-auto max-w-container px-5 md:px-8 pt-4 pb-1">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 font-body text-xs text-text-muted hover:text-primary transition-colors"
+          >
+            <span className="material-symbols-outlined icon-outline text-[14px]">
+              arrow_back
+            </span>
+            Back to shop
+          </Link>
+        </div>
+        <div className="mx-auto max-w-container px-5 md:px-8 py-5 flex items-center gap-4">
           <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0">
             <span className="font-heading text-base font-extrabold text-white">
               {getInitials(user.name)}

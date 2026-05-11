@@ -1,26 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
+import { useLogout } from "@/hooks/api/use-auth";
 import { useCart } from "@/providers/cart-provider";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 
 export function MobileNav() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const logoutMutation = useLogout();
   const { itemCount } = useCart();
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
-
-  const handleLogout = useCallback(() => {
-    logout();
-    router.push("/");
-  }, [logout, router]);
 
   const accountHref = user
     ? user.role === "admin"
@@ -84,7 +79,7 @@ export function MobileNav() {
       {/* Account / Login / Logout */}
       {user ? (
         <button
-          onClick={handleLogout}
+          onClick={() => logoutMutation.mutate()}
           aria-label="Sign out"
           className="flex flex-col items-center justify-center gap-0.5 p-2 text-text-muted hover:text-error transition-colors duration-200"
         >
