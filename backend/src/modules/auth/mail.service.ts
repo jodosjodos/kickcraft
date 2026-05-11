@@ -2,6 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
+import {
+  verificationTemplate,
+  welcomeTemplate,
+  passwordResetTemplate,
+  passwordChangeConfirmTemplate,
+  passwordChangedTemplate,
+} from './templates/email.templates';
 
 @Injectable()
 export class MailService {
@@ -25,41 +32,42 @@ export class MailService {
     });
   }
 
+  private async send(to: string, subject: string, html: string): Promise<void> {
+    try {
+      await this.transporter.sendMail({ from: this.from, to, subject, html });
+    } catch (err) {
+      this.logger.error(`Failed to send email to ${to}: ${subject}`, err);
+    }
+  }
+
   async sendVerificationEmail(to: string, token: string): Promise<void> {
     const link = `${this.frontendUrl}/auth/verify-email?token=${token}`;
-    try {
-      await this.transporter.sendMail({
-        from: this.from,
-        to,
-        subject: 'Verify your Kickcraft email',
-        html: `
-          <p>Welcome to Kickcraft!</p>
-          <p>Click the link below to verify your email address:</p>
-          <p><a href="${link}">${link}</a></p>
-          <p>This link does not expire.</p>
-        `,
-      });
-    } catch (err) {
-      this.logger.error(`Failed to send verification email to ${to}`, err);
-    }
+    await this.send(to, 'Verify your Kickcraft email', verificationTemplate(link));
+  }
+
+  async sendWelcomeEmail(to: string, name: string): Promise<void> {
+    await this.send(to, `Welcome to Kickcraft, ${name.split(' ')[0]}!`, welcomeTemplate(name));
   }
 
   async sendPasswordResetEmail(to: string, token: string): Promise<void> {
     const link = `${this.frontendUrl}/auth/reset-password?token=${token}`;
-    try {
-      await this.transporter.sendMail({
-        from: this.from,
-        to,
-        subject: 'Reset your Kickcraft password',
-        html: `
-          <p>You requested a password reset.</p>
-          <p>Click the link below to set a new password:</p>
-          <p><a href="${link}">${link}</a></p>
-          <p>This link expires in 1 hour. If you did not request this, ignore this email.</p>
-        `,
-      });
-    } catch (err) {
-      this.logger.error(`Failed to send password reset email to ${to}`, err);
-    }
+    await this.send(to, 'Reset your Kickcraft password', passwordResetTemplate(link));
+  }
+
+  async sendPasswordChangeConfirmation(
+    to: string,
+    token: string,
+    name: string,
+  ): Promise<void> {
+    const link = `${this.frontendUrl}/auth/confirm-password-change?token=${token}`;
+    await this.send(
+      to,
+      'Confirm your password change',
+      passwordChangeConfirmTemplate(link, name),
+    );
+  }
+
+  async sendPasswordChangedNotification(to: string, name: string): Promise<void> {
+    await this.send(to, 'Your password was changed', passwordChangedTemplate(name));
   }
 }

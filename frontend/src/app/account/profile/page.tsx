@@ -2,64 +2,91 @@
 
 import { useState } from "react";
 import { useAuth } from "@/providers/auth-provider";
+import { AuthInput } from "@/components/auth/auth-input";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useUpdateProfile } from "@/hooks/api/use-auth";
+import type { ApiError } from "@/types/api/common";
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
 
 export default function ProfilePage() {
-  const { user, setUser } = useAuth();
+  const { user } = useAuth();
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({
-    name: user?.name ?? "",
-    email: user?.email ?? "",
-    phone: user?.phone ?? "",
-  });
-  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ name: "", phone: "" });
   const [saved, setSaved] = useState(false);
+  const updateProfile = useUpdateProfile();
 
   if (!user) return null;
 
-  function set(key: keyof typeof form) {
-    return (e: React.ChangeEvent<HTMLInputElement>) =>
-      setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  function startEdit() {
+    setForm({ name: user!.name, phone: user!.phone ?? "" });
+    setEditing(true);
   }
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setUser({ ...user!, ...form });
-    setSaving(false);
+  function handleCancel() {
     setEditing(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    updateProfile.reset();
   }
+
+  function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    updateProfile.mutate(
+      {
+        name: form.name || undefined,
+        phone: form.phone || undefined,
+      },
+      {
+        onSuccess: () => {
+          setEditing(false);
+          setSaved(true);
+          setTimeout(() => setSaved(false), 3000);
+        },
+      }
+    );
+  }
+
+  const errorMsg = (updateProfile.error as ApiError | null)?.message;
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-heading text-2xl font-extrabold uppercase tracking-tight text-text">
-          Profile
-        </h1>
+      {/* Hero card */}
+      <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-5 border border-border bg-surface p-6">
+        <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shrink-0">
+          <span className="font-heading text-2xl font-extrabold text-white">
+            {getInitials(user.name)}
+          </span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <h1 className="font-heading text-xl font-extrabold uppercase tracking-tight text-text">
+              {user.name}
+            </h1>
+            <span className="font-body text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5">
+              {user.role === "admin" ? "Admin" : "Customer"}
+            </span>
+          </div>
+          <p className="font-body text-sm text-text-muted">{user.email}</p>
+        </div>
         {!editing && (
           <button
-            onClick={() => {
-              setForm({
-                name: user.name,
-                email: user.email,
-                phone: user.phone ?? "",
-              });
-              setEditing(true);
-            }}
-            className="font-body text-sm text-primary hover:underline underline-offset-4"
+            onClick={startEdit}
+            className="font-body text-sm text-primary hover:underline underline-offset-4 shrink-0"
           >
-            Edit
+            Edit profile
           </button>
         )}
       </div>
 
       {saved && (
         <div className="mb-5 flex items-center gap-2 border border-secondary/30 bg-secondary/10 px-4 py-2.5">
-          <span className="material-symbols-outlined icon-outline text-[16px] text-secondary">
+          <span className="material-symbols-outlined icon-fill text-[16px] text-secondary">
             check_circle
           </span>
           <p className="font-body text-sm text-secondary font-semibold">
@@ -69,35 +96,33 @@ export default function ProfilePage() {
       )}
 
       {editing ? (
-        <form onSubmit={handleSave} className="flex flex-col gap-5 max-w-md">
-          <Input
+        <form onSubmit={handleSave} className="flex flex-col gap-4 max-w-md">
+          {errorMsg && (
+            <p className="font-body text-sm text-error">{errorMsg}</p>
+          )}
+          <AuthInput
             label="Full Name"
             type="text"
             value={form.name}
-            onChange={set("name")}
+            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
             required
           />
-          <Input
-            label="Email"
-            type="email"
-            value={form.email}
-            onChange={set("email")}
-            required
-          />
-          <Input
+          <AuthInput
             label="Phone"
             type="tel"
             value={form.phone}
-            onChange={set("phone")}
-            helper="MTN MoMo number for payments and order updates"
+            onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+            helper="+250 format — used for MoMo payments"
           />
-
-          <div className="flex gap-3 mt-2">
+          <p className="font-body text-xs text-text-muted -mt-1">
+            Email cannot be changed. Contact support if needed.
+          </p>
+          <div className="flex gap-3 mt-1">
             <Button
               type="button"
               variant="secondary"
               size="md"
-              onClick={() => setEditing(false)}
+              onClick={handleCancel}
             >
               Cancel
             </Button>
@@ -105,32 +130,31 @@ export default function ProfilePage() {
               type="submit"
               variant="primary"
               size="md"
-              loading={saving}
+              loading={updateProfile.isPending}
             >
               Save Changes
             </Button>
           </div>
         </form>
       ) : (
-        <div className="border border-border bg-surface p-5 max-w-md">
-          <div className="flex flex-col gap-4">
-            {[
-              { label: "Full Name", value: user.name },
-              { label: "Email", value: user.email },
-              { label: "Phone", value: user.phone ?? "—" },
-              {
-                label: "Account Type",
-                value: user.role === "admin" ? "Admin" : "Customer",
-              },
-            ].map(({ label, value }) => (
-              <div key={label}>
-                <p className="font-body text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-0.5">
-                  {label}
-                </p>
-                <p className="font-body text-sm text-text">{value}</p>
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+          {[
+            { icon: "badge", label: "Full Name", value: user.name },
+            { icon: "mail", label: "Email", value: user.email },
+            { icon: "phone", label: "Phone", value: user.phone ?? "—" },
+          ].map(({ icon, label, value }) => (
+            <div key={label} className="border border-border bg-surface p-4">
+              <span className="material-symbols-outlined icon-outline text-[18px] text-primary mb-2 block">
+                {icon}
+              </span>
+              <p className="font-body text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-0.5">
+                {label}
+              </p>
+              <p className="font-body text-sm text-text font-medium truncate">
+                {value}
+              </p>
+            </div>
+          ))}
         </div>
       )}
     </div>

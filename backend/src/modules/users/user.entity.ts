@@ -41,4 +41,16 @@ export class User extends BaseEntity {
   @Exclude()
   @Column({ type: 'timestamptz', nullable: true, default: null })
   resetTokenExpiresAt!: Date | null;
+
+  @Exclude()
+  @Column({ type: 'varchar', nullable: true, default: null })
+  pendingPasswordHash!: string | null;
+
+  @Exclude()
+  @Column({ type: 'varchar', nullable: true, default: null })
+  passwordChangeToken!: string | null;
+
+  @Exclude()
+  @Column({ type: 'timestamptz', nullable: true, default: null })
+  passwordChangeTokenExpiresAt!: Date | null;
 }

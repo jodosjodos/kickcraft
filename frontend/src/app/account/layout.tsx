@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
+import { useLogout } from "@/hooks/api/use-auth";
 import { cn } from "@/lib/utils";
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 
 const navItems = [
   { label: "Orders", href: "/account/orders", icon: "receipt_long" },
   { label: "Profile", href: "/account/profile", icon: "person" },
+  { label: "Security", href: "/account/security", icon: "shield" },
 ];
 
 function getInitials(name: string): string {
@@ -27,18 +29,14 @@ export default function AccountLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading } = useAuth();
+  const logoutMutation = useLogout();
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace(`/auth/login?redirect=${encodeURIComponent(pathname)}`);
     }
   }, [user, isLoading, pathname, router]);
-
-  const handleLogout = useCallback(() => {
-    logout();
-    router.replace("/");
-  }, [logout, router]);
 
   if (isLoading || !user) return null;
 
@@ -93,7 +91,7 @@ export default function AccountLayout({
               })}
 
               <button
-                onClick={handleLogout}
+                onClick={() => logoutMutation.mutate()}
                 className="flex items-center gap-3 px-4 py-3 font-body text-sm font-semibold text-text-muted hover:text-error hover:bg-surface-elevated transition-all duration-150 shrink-0 w-full text-left border-l-2 border-transparent"
               >
                 <span className="material-symbols-outlined icon-outline text-[18px]">

@@ -17,6 +17,9 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ConfirmPasswordChangeDto } from './dto/confirm-password-change.dto';
 import { User } from '../users/user.entity';
 
 @Injectable()
@@ -35,8 +38,7 @@ export class AuthService {
     if (existingEmail) throw new ConflictException('Email already in use');
 
     const existingPhone = await this.usersService.findByPhone(dto.phone);
-    if (existingPhone)
-      throw new ConflictException('Phone number already in use');
+    if (existingPhone) throw new ConflictException('Phone number already in use');
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const verificationToken = randomUUID();
@@ -50,6 +52,7 @@ export class AuthService {
     });
 
     void this.mailService.sendVerificationEmail(user.email, verificationToken);
+    void this.mailService.sendWelcomeEmail(user.email, user.name);
 
     return user;
   }
@@ -60,8 +63,7 @@ export class AuthService {
     });
 
     if (!user) throw new BadRequestException('Invalid or expired token');
-    if (user.isVerified)
-      throw new BadRequestException('Email already verified');
+    if (user.isVerified) throw new BadRequestException('Email already verified');
 
     user.isVerified = true;
     user.verificationToken = null;
@@ -140,5 +142,82 @@ export class AuthService {
     await this.userRepo.save(user);
 
     return { message: 'Password reset successful' };
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<User> {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('User not found');
+
+    if (dto.phone && dto.phone !== user.phone) {
+      const existing = await this.usersService.findByPhone(dto.phone);
+      if (existing) throw new ConflictException('Phone number already in use');
+    }
+
+    if (dto.name) user.name = dto.name;
+    if (dto.phone) user.phone = dto.phone;
+
+    return this.userRepo.save(user);
+  }
+
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('User not found');
+
+    const match = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!match) throw new UnauthorizedException('Current password is incorrect');
+
+    const pendingPasswordHash = await bcrypt.hash(dto.newPassword, 12);
+    const passwordChangeToken = randomUUID();
+    const passwordChangeTokenExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    user.pendingPasswordHash = pendingPasswordHash;
+    user.passwordChangeToken = passwordChangeToken;
+    user.passwordChangeTokenExpiresAt = passwordChangeTokenExpiresAt;
+    await this.userRepo.save(user);
+
+    void this.mailService.sendPasswordChangeConfirmation(
+      user.email,
+      passwordChangeToken,
+      user.name,
+    );
+
+    return {
+      message:
+        'Check your email — click the confirmation link to apply the new password',
+    };
+  }
+
+  async confirmPasswordChange(
+    dto: ConfirmPasswordChangeDto,
+  ): Promise<{ message: string }> {
+    const user = await this.userRepo.findOne({
+      where: { passwordChangeToken: dto.token },
+    });
+
+    if (!user) throw new BadRequestException('Invalid or expired token');
+
+    if (
+      !user.passwordChangeTokenExpiresAt ||
+      user.passwordChangeTokenExpiresAt < new Date()
+    ) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+
+    if (!user.pendingPasswordHash) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+
+    user.passwordHash = user.pendingPasswordHash;
+    user.pendingPasswordHash = null;
+    user.passwordChangeToken = null;
+    user.passwordChangeTokenExpiresAt = null;
+    await this.userRepo.save(user);
+
+    void this.mailService.sendPasswordChangedNotification(user.email, user.name);
+
+    return { message: 'Password updated successfully' };
   }
 }

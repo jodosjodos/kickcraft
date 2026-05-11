@@ -1,79 +1,71 @@
+import apiClient from "@/lib/api/client";
 import type {
+  ChangePasswordRequest,
   ForgotPasswordRequest,
   LoginRequest,
   RegisterRequest,
   ResetPasswordRequest,
+  UpdateProfileRequest,
   User,
   VerifyEmailRequest,
 } from "@/types/api/auth";
 
-function delay(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms));
-}
-
-const MOCK_USER: User = {
-  id: "mock-user-1",
-  email: "user@kickcraft.rw",
-  name: "Mugisha Eric",
-  role: "user",
-  phone: "+250788000001",
-};
-
-const MOCK_ADMIN: User = {
-  id: "mock-admin-1",
-  email: "admin@kickcraft.rw",
-  name: "Admin",
-  role: "admin",
-};
-
-// TODO: replace with real API call
 export async function login(data: LoginRequest): Promise<User> {
-  await delay(800);
-  if (data.email === MOCK_ADMIN.email) return MOCK_ADMIN;
-  return MOCK_USER;
+  const res = await apiClient.post<User>("/auth/login", data);
+  return res.data;
 }
 
-// TODO: replace with real API call
 export async function register(data: RegisterRequest): Promise<User> {
-  await delay(900);
-  return {
-    id: `user-${Date.now()}`,
-    email: data.email,
-    name: data.name,
-    phone: data.phone,
-    role: "user",
-  };
+  const res = await apiClient.post<User>("/auth/register", data);
+  return res.data;
 }
 
-// TODO: replace with real API call
 export async function logout(): Promise<void> {
-  await delay(300);
+  await apiClient.post("/auth/logout");
 }
 
-// TODO: replace with real API call
 export async function forgotPassword(
   data: ForgotPasswordRequest
 ): Promise<void> {
-  await delay(700);
-  void data;
+  await apiClient.post("/auth/forgot-password", data);
 }
 
-// TODO: replace with real API call
 export async function resetPassword(
   data: ResetPasswordRequest
 ): Promise<void> {
-  await delay(700);
-  void data;
+  await apiClient.post("/auth/reset-password", data);
 }
 
-// TODO: replace with real API call
 export async function verifyEmail(data: VerifyEmailRequest): Promise<void> {
-  await delay(600);
-  void data;
+  await apiClient.post("/auth/verify-email", data);
 }
 
-// TODO: replace with real API call
 export async function getMe(): Promise<User> {
-  await delay(300);
-  return MOCK_USER;
+  const res = await apiClient.get<User>("/auth/me");
+  return res.data;
+}
+
+export async function updateProfile(data: UpdateProfileRequest): Promise<User> {
+  const res = await apiClient.patch<User>("/auth/profile", data);
+  return res.data;
+}
+
+export async function changePassword(
+  data: ChangePasswordRequest
+): Promise<{ message: string }> {
+  const res = await apiClient.post<{ message: string }>(
+    "/auth/change-password",
+    data
+  );
+  return res.data;
+}
+
+export async function confirmPasswordChange(data: {
+  token: string;
+}): Promise<{ message: string }> {
+  const res = await apiClient.post<{ message: string }>(
+    "/auth/confirm-password-change",
+    data
+  );
+  return res.data;
 }

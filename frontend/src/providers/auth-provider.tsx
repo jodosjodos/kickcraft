@@ -8,7 +8,7 @@ import {
   useCallback,
 } from "react";
 import type { User } from "@/types/api/auth";
-import { parseJwt, isTokenExpired, getUserFromPayload } from "@/lib/auth";
+import * as authService from "@/services/auth.service";
 
 interface AuthContextValue {
   user: User | null;
@@ -24,24 +24,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const entry = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("access_token="));
-    if (entry) {
-      const token = entry.split("=")[1];
-      if (token && !isTokenExpired(token)) {
-        const payload = parseJwt(token);
-        if (payload) {
-          const restored = getUserFromPayload(payload);
-          if (restored) setUser(restored);
-        }
-      }
-    }
-    setIsLoading(false);
+    authService
+      .getMe()
+      .then((me) => setUser(me))
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, []);
 
   const logout = useCallback(() => {
-    document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
     setUser(null);
   }, []);
 

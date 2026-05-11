@@ -7,6 +7,8 @@ const publicRoutes = [
   "/auth/register",
   "/auth/forgot-password",
   "/auth/verify-email",
+  "/auth/reset-password",
+  "/auth/confirm-password-change",
 ];
 
 const openRoutePrefixes = [

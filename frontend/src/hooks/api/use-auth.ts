@@ -1,27 +1,20 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import * as authService from "@/services/auth.service";
 import { queryKeys } from "@/lib/query-keys";
-import { createMockJwt } from "@/lib/auth";
 import type {
+  ChangePasswordRequest,
   ForgotPasswordRequest,
   LoginRequest,
   RegisterRequest,
+  ResetPasswordRequest,
+  UpdateProfileRequest,
+  User,
 } from "@/types/api/auth";
-import type { User } from "@/types/api/auth";
 import type { ApiError } from "@/types/api/common";
-
-function setAuthCookie(user: User) {
-  const token = createMockJwt(user);
-  document.cookie = `access_token=${token}; path=/; max-age=86400; SameSite=Lax`;
-}
-
-function clearAuthCookie() {
-  document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
-}
 
 export function useMe() {
   return useQuery<User, ApiError>({
@@ -40,7 +33,6 @@ export function useLogin() {
   return useMutation<User, ApiError, LoginRequest>({
     mutationFn: authService.login,
     onSuccess: (user) => {
-      setAuthCookie(user);
       setUser(user);
       const redirect = searchParams.get("redirect");
       if (user.role === "admin") {
@@ -53,15 +45,12 @@ export function useLogin() {
 }
 
 export function useRegister() {
-  const { setUser } = useAuth();
   const router = useRouter();
 
   return useMutation<User, ApiError, RegisterRequest>({
     mutationFn: authService.register,
-    onSuccess: (user) => {
-      setAuthCookie(user);
-      setUser(user);
-      router.push("/");
+    onSuccess: () => {
+      router.push("/auth/verify-email");
     },
   });
 }
@@ -72,14 +61,40 @@ export function useForgotPassword() {
   });
 }
 
+export function useResetPassword() {
+  return useMutation<void, ApiError, ResetPasswordRequest>({
+    mutationFn: authService.resetPassword,
+  });
+}
+
+export function useUpdateProfile() {
+  const { setUser } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation<User, ApiError, UpdateProfileRequest>({
+    mutationFn: authService.updateProfile,
+    onSuccess: (user) => {
+      setUser(user);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() });
+    },
+  });
+}
+
+export function useChangePassword() {
+  return useMutation<{ message: string }, ApiError, ChangePasswordRequest>({
+    mutationFn: authService.changePassword,
+  });
+}
+
 export function useLogout() {
   const { logout } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   return useMutation<void, ApiError, void>({
     mutationFn: authService.logout,
     onSuccess: () => {
-      clearAuthCookie();
+      queryClient.clear();
       logout();
       router.push("/");
     },
