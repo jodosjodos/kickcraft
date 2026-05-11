@@ -41,8 +41,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
     setUser(null);
-    // TODO: call /auth/logout when backend is ready
   }, []);
 
   return (

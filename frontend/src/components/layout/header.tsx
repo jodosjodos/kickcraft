@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/providers/auth-provider";
 import { useCart } from "@/providers/cart-provider";
 import { useWishlist } from "@/providers/wishlist-provider";
@@ -19,12 +20,38 @@ const navLinks = [
 
 export function Header() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const { itemCount } = useCart();
   const { count: wishlistCount } = useWishlist();
 
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  const handleLogout = useCallback(() => {
+    setDropdownOpen(false);
+    logout();
+    router.push("/");
+  }, [logout, router]);
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    function handleOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [dropdownOpen]);
+
+  // Close dropdown on route change
+  useEffect(() => {
+    setDropdownOpen(false);
+  }, [pathname]);
 
   return (
     <>
@@ -98,13 +125,66 @@ export function Header() {
             </Link>
 
             {user ? (
-              <Link
-                href={user.role === "admin" ? "/admin/dashboard" : "/account"}
-                className="p-2 hover:text-primary transition-colors duration-200 active:scale-95"
-                aria-label="Account"
-              >
-                <Icon name="account_circle" size={22} />
-              </Link>
+              <div className="relative ml-1" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen((v) => !v)}
+                  className={cn(
+                    "p-2 transition-colors duration-200 active:scale-95",
+                    dropdownOpen ? "text-primary" : "hover:text-primary"
+                  )}
+                  aria-label="Account menu"
+                  aria-expanded={dropdownOpen}
+                >
+                  <Icon name="account_circle" size={22} />
+                </button>
+
+                {dropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-52 bg-surface border border-border shadow-[0_8px_24px_rgba(0,0,0,0.4)] z-50">
+                    {/* User info */}
+                    <div className="px-4 py-3 border-b border-border">
+                      <p className="font-heading text-sm font-extrabold uppercase tracking-tight text-text truncate">
+                        {user.name}
+                      </p>
+                      <p className="font-body text-xs text-text-muted truncate mt-0.5">
+                        {user.email}
+                      </p>
+                    </div>
+
+                    <div className="py-1">
+                      <Link
+                        href={user.role === "admin" ? "/admin/dashboard" : "/account"}
+                        className="flex items-center gap-2.5 px-4 py-2.5 font-body text-sm text-text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+                      >
+                        <Icon
+                          name={user.role === "admin" ? "dashboard" : "person"}
+                          size={16}
+                        />
+                        {user.role === "admin" ? "Dashboard" : "My Account"}
+                      </Link>
+
+                      {user.role === "user" && (
+                        <Link
+                          href="/account/orders"
+                          className="flex items-center gap-2.5 px-4 py-2.5 font-body text-sm text-text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+                        >
+                          <Icon name="package_2" size={16} />
+                          My Orders
+                        </Link>
+                      )}
+
+                      <div className="my-1 border-t border-border" />
+
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 font-body text-sm text-error hover:bg-error/8 transition-colors"
+                      >
+                        <Icon name="logout" size={16} />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <Link
                 href="/auth/login"
@@ -117,7 +197,7 @@ export function Header() {
         </div>
       </header>
 
-      {/* Announcement strip — scrolls with page on mobile, fixed offset on desktop */}
+      {/* Announcement strip */}
       <div className="hidden md:block fixed top-[72px] left-0 right-0 z-40 bg-primary py-2 text-center">
         <p className="font-body text-xs font-semibold uppercase tracking-wider text-white">
           Free Delivery on orders above 20,000 RWF

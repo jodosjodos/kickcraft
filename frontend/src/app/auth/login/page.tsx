@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, Suspense } from "react";
 import { useLogin } from "@/hooks/api/use-auth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { AuthInput } from "@/components/auth/auth-input";
 import { Spinner } from "@/components/ui/spinner";
 
 function LoginForm() {
@@ -19,15 +19,27 @@ function LoginForm() {
 
   return (
     <div className="w-full">
-      <h1 className="font-heading text-3xl font-extrabold uppercase tracking-tight text-text mb-1">
-        Welcome Back
-      </h1>
-      <p className="font-body text-sm text-text-muted mb-8">
-        Sign in to your Kickcraft account
-      </p>
+      {/* Header */}
+      <div className="mb-8">
+        <p className="font-body text-[10px] font-bold uppercase tracking-[0.2em] text-primary mb-1">
+          Welcome back
+        </p>
+        <h1 className="font-heading text-3xl font-extrabold uppercase tracking-tight text-text">
+          Sign In
+        </h1>
+        <p className="font-body text-sm text-text-muted mt-1">
+          New here?{" "}
+          <Link
+            href="/auth/register"
+            className="text-primary hover:underline underline-offset-4 font-semibold"
+          >
+            Create a free account
+          </Link>
+        </p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <Input
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <AuthInput
           label="Email"
           type="email"
           placeholder="you@example.com"
@@ -37,8 +49,8 @@ function LoginForm() {
           autoComplete="email"
         />
 
-        <div className="flex flex-col gap-1.5">
-          <Input
+        <div className="flex flex-col gap-1">
+          <AuthInput
             label="Password"
             type="password"
             placeholder="••••••••"
@@ -47,7 +59,7 @@ function LoginForm() {
             required
             autoComplete="current-password"
           />
-          <div className="flex justify-end">
+          <div className="flex justify-end mt-1">
             <Link
               href="/auth/forgot-password"
               className="font-body text-xs text-text-muted hover:text-primary transition-colors"
@@ -58,7 +70,12 @@ function LoginForm() {
         </div>
 
         {login.error && (
-          <p className="font-body text-sm text-error">{login.error.message}</p>
+          <div className="flex items-center gap-2 bg-error/10 border border-error/30 px-3 py-2.5">
+            <span className="material-symbols-outlined icon-filled text-[14px] text-error shrink-0">
+              error
+            </span>
+            <p className="font-body text-sm text-error">{login.error.message}</p>
+          </div>
         )}
 
         <Button
@@ -68,28 +85,16 @@ function LoginForm() {
           loading={login.isPending}
           className="w-full mt-2"
         >
-          Sign In
+          {login.isPending ? "Signing in…" : "Sign In"}
         </Button>
       </form>
 
-      <div className="mt-6 pt-6 border-t border-border">
-        <p className="text-center font-body text-sm text-text-muted">
-          No account?{" "}
-          <Link
-            href="/auth/register"
-            className="text-primary hover:underline underline-offset-4 font-semibold"
-          >
-            Create one free
-          </Link>
-        </p>
-      </div>
-
       {/* Dev hint */}
-      <div className="mt-6 p-3 bg-surface-elevated border border-border rounded">
+      <div className="mt-6 p-3 bg-surface-elevated border border-border">
         <p className="font-body text-[11px] text-text-muted leading-relaxed">
           <span className="font-semibold text-text">Dev:</span>{" "}
-          user@kickcraft.rw → storefront · admin@kickcraft.rw → admin panel
-          · any password
+          user@kickcraft.rw → storefront · admin@kickcraft.rw → admin panel ·
+          any password
         </p>
       </div>
     </div>

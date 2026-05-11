@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { AuthImagePanel } from "@/components/auth/auth-image-panel";
 
 export default function AuthLayout({
   children,
@@ -9,7 +9,10 @@ export default function AuthLayout({
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left panel — form */}
-      <div className="flex flex-col w-full md:w-1/2 px-6 py-10 md:px-12 lg:px-16">
+      <div className="flex flex-col w-full md:w-1/2 px-6 py-10 md:px-12 lg:px-16 relative">
+        {/* Subtle top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-primary via-primary/40 to-transparent" />
+
         {/* Logo */}
         <Link
           href="/"
@@ -18,44 +21,19 @@ export default function AuthLayout({
           KICKCRAFT
         </Link>
 
-        {/* Content */}
+        {/* Form content */}
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-sm">{children}</div>
         </div>
 
         {/* Footer note */}
         <p className="font-body text-xs text-text-muted text-center mt-8">
-          © 2024 Kickcraft · Kigali, Rwanda
+          © 2025 Kickcraft · Kigali, Rwanda
         </p>
       </div>
 
-      {/* Right panel — hero image (desktop only) */}
-      <div className="hidden md:block relative w-1/2 overflow-hidden bg-surface-elevated">
-        <Image
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvLFmBfnNVA9bJijjZph__8KpuIvMmO4Y2TAmqT9GLMhGuAXmCJ27BIddwZ3Qq-bh8cbstcbPyyB-ZtzHwv6LRRTcLb6_jl49bQQpiFVr8jOHLjq1PqdXXGZw3I2j-kX2spGaq4aaS2rXpssMaV6ZmTIw_97lfVIe0ChNkWG885HhTqm8sPsKbqz6MMbJtMkhCVHqrQsj8MODDT1qEbgrqWkk3fDiBdzEDH9zpFamsUOFrc8WPpYt2vmJvFozIjEY3BGu1-zwLiLIN"
-          alt="Premium sneakers"
-          fill
-          sizes="50vw"
-          className="object-cover"
-          priority
-        />
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-linear-to-r from-background/60 via-background/20 to-transparent" />
-
-        {/* Tagline */}
-        <div className="absolute bottom-12 left-10 right-10">
-          <p className="font-body text-xs font-bold uppercase tracking-[0.2em] text-primary mb-2">
-            Kigali&apos;s sneaker destination
-          </p>
-          <h2 className="font-heading text-3xl font-extrabold uppercase tracking-tight text-white leading-tight">
-            Authentic kicks.
-            <br />
-            Fair prices.
-            <br />
-            Fast delivery.
-          </h2>
-        </div>
-      </div>
+      {/* Right panel — animated slideshow */}
+      <AuthImagePanel />
     </div>
   );
 }
