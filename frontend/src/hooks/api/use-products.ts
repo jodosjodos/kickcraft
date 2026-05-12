@@ -1,8 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as productsService from "@/services/products.service";
 import { queryKeys } from "@/lib/query-keys";
-import type { ProductFilters } from "@/types/api/products";
-import type { Product } from "@/types/api/products";
+import type {
+  CreateProductRequest,
+  Product,
+  ProductFilters,
+  UpdateProductRequest,
+  UploadImageResponse,
+} from "@/types/api/products";
 import type { ApiError } from "@/types/api/common";
 import type { PaginatedResponse } from "@/types/api/common";
 
@@ -45,5 +50,48 @@ export function useSaleProducts() {
     queryKey: queryKeys.products.sale(),
     queryFn: productsService.getSaleProducts,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreateProduct() {
+  const qc = useQueryClient();
+  return useMutation<Product, ApiError, CreateProductRequest>({
+    mutationFn: productsService.createProduct,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.products.all });
+    },
+  });
+}
+
+export function useUpdateProduct() {
+  const qc = useQueryClient();
+  return useMutation<
+    Product,
+    ApiError,
+    { id: string; data: UpdateProductRequest }
+  >({
+    mutationFn: ({ id, data }) => productsService.updateProduct(id, data),
+    onSuccess: (product) => {
+      void qc.invalidateQueries({ queryKey: queryKeys.products.all });
+      void qc.invalidateQueries({
+        queryKey: queryKeys.products.detail(product.slug),
+      });
+    },
+  });
+}
+
+export function useDeleteProduct() {
+  const qc = useQueryClient();
+  return useMutation<void, ApiError, string>({
+    mutationFn: productsService.deleteProduct,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.products.all });
+    },
+  });
+}
+
+export function useUploadImage() {
+  return useMutation<UploadImageResponse, ApiError, File>({
+    mutationFn: productsService.uploadImage,
   });
 }

@@ -39,6 +39,8 @@ export interface ProductFilters {
   maxPrice?: number;
   sort?: SortOption;
   search?: string;
+  brand?: string;
+  status?: ProductStatus;
   page?: number;
   limit?: number;
 }
@@ -47,12 +49,20 @@ export interface CreateProductRequest {
   name: string;
   brand: string;
   price: number;
+  originalPrice?: number;
   sizes: string[];
+  colors?: string[];
   category: string;
+  subCategory: SubCategory;
   description: string;
   stock: number;
+  status?: ProductStatus;
+  isNew?: boolean;
+  images?: { url: string; alt: string; order: number }[];
 }
 
-export interface UpdateProductRequest extends Partial<CreateProductRequest> {
-  status?: ProductStatus;
+export interface UpdateProductRequest extends Partial<CreateProductRequest> {}
+
+export interface UploadImageResponse {
+  url: string;
 }

@@ -41,7 +41,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
             alt={primaryImage.alt}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
-            className="object-contain transition-all duration-500 ease-out group-hover:scale-110"
+            className="object-cover transition-all duration-500 ease-out group-hover:scale-110"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-surface-elevated">

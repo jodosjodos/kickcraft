@@ -43,6 +43,34 @@ class EnvironmentVariables {
 
   @IsString()
   FRONTEND_URL!: string;
+
+  @IsString()
+  MINIO_ENDPOINT!: string;
+
+  @IsNumber()
+  @Min(1)
+  MINIO_PORT: number = 9000;
+
+  @IsString()
+  MINIO_USE_SSL: string = 'false';
+
+  @IsString()
+  MINIO_ACCESS_KEY!: string;
+
+  @IsString()
+  MINIO_SECRET_KEY!: string;
+
+  @IsString()
+  MINIO_BUCKET!: string;
+
+  @IsString()
+  MINIO_PUBLIC_URL!: string;
+
+  @IsString()
+  ADMIN_EMAIL!: string;
+
+  @IsString()
+  ADMIN_PASSWORD!: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

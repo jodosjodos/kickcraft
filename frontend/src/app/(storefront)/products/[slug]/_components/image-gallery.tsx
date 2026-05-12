@@ -29,7 +29,7 @@ export function ImageGallery({
             alt={activeImage.alt || productName}
             fill
             sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-contain"
+            className="object-cover"
             priority
           />
         ) : (
@@ -65,7 +65,7 @@ export function ImageGallery({
                 alt={img.alt || `${productName} view ${i + 1}`}
                 fill
                 sizes="64px"
-                className="object-contain bg-product-card"
+                className="object-cover bg-product-card"
               />
             </button>
           ))}

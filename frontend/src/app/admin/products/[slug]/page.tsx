@@ -6,11 +6,11 @@ import { useProduct } from "@/hooks/api/use-products";
 import { Spinner } from "@/components/ui/spinner";
 import { formatPrice } from "@/lib/utils";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ slug: string }> };
 
 export default function AdminProductDetailPage({ params }: Props) {
-  const { id } = use(params);
-  const { data: product, isLoading, isError } = useProduct(id);
+  const { slug } = use(params);
+  const { data: product, isLoading, isError } = useProduct(slug);
 
   if (isLoading) {
     return (
@@ -97,8 +97,7 @@ export default function AdminProductDetailPage({ params }: Props) {
 
       <div className="mt-6 p-4 border border-border/50 bg-surface-elevated">
         <p className="font-body text-xs text-text-muted">
-          Full product edit form available when backend API is connected. ·{" "}
-          <span className="text-text">Slug: {product.slug}</span>
+          Slug: <span className="text-text">{product.slug}</span>
         </p>
       </div>
     </div>
