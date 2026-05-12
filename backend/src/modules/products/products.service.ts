@@ -45,8 +45,12 @@ export class ProductsService {
     if (query.brand) {
       qb.andWhere('LOWER(p.brand) = LOWER(:brand)', { brand: query.brand });
     }
-    if (query.status) {
+    if (query.status === 'all') {
+      // no filter — admin sees all statuses
+    } else if (query.status) {
       qb.andWhere('p.status = :status', { status: query.status });
+    } else {
+      qb.andWhere('p.status = :status', { status: ProductStatus.Active });
     }
     if (query.minPrice !== undefined) {
       qb.andWhere('p.price >= :min', { min: query.minPrice });

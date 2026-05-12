@@ -33,7 +33,7 @@ function EditorsPick({ product }: { product: Product }) {
       </span>
 
       {/* Image */}
-      <div className="relative w-full md:w-[42%] aspect-[4/3] md:aspect-auto bg-product-card overflow-hidden shrink-0">
+      <div className="relative w-full md:w-[42%] aspect-4/3 md:aspect-auto bg-product-card overflow-hidden shrink-0">
         {image ? (
           <Image
             src={image.url}

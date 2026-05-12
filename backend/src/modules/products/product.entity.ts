@@ -3,8 +3,8 @@ import { BaseEntity } from '../../common/entities/base.entity';
 
 export enum ProductStatus {
   Active = 'active',
-  Sold = 'sold',
   Draft = 'draft',
+  Archived = 'archived',
 }
 
 export enum ProductCategory {
@@ -67,9 +67,6 @@ export class Product extends BaseEntity {
 
   @Column('simple-array', { default: '' })
   sizes!: string[];
-
-  @Column('simple-array', { nullable: true, default: null })
-  colors!: string[] | null;
 
   @Column({
     type: 'decimal',

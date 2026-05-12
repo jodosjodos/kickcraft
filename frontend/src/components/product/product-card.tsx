@@ -52,24 +52,24 @@ export function ProductCard({ product, className }: ProductCardProps) {
         )}
 
         {/* Badges */}
-        {product.isNew && product.status !== "sold" && (
+        {product.isNew && product.stock > 0 && product.status === "active" && (
           <span className="absolute top-2 left-2 bg-secondary text-background font-body text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
             New
           </span>
         )}
-        {isOnSale && !product.isNew && product.status !== "sold" && (
+        {isOnSale && !product.isNew && product.stock > 0 && product.status === "active" && (
           <span className="absolute top-2 left-2 bg-primary text-white font-body text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
             Sale
           </span>
         )}
 
-        {product.stock <= 3 && product.stock > 0 && product.status !== "sold" && (
+        {product.stock <= 3 && product.stock > 0 && product.status === "active" && (
           <span className="absolute top-2 right-2 bg-error/90 text-background font-body text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded">
             Only {product.stock} left
           </span>
         )}
 
-        {product.status === "sold" && (
+        {product.status === "active" && product.stock === 0 && (
           <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
             <span className="font-heading text-sm font-bold uppercase tracking-widest text-text-muted">
               Sold Out

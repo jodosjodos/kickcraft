@@ -27,7 +27,7 @@ const STATUS_CONFIG: Record<ProductStatus, { label: string; classes: string }> =
       label: "Draft",
       classes: "text-text-muted bg-surface-elevated",
     },
-    sold: { label: "Archived", classes: "text-error bg-error/10" },
+    archived: { label: "Archived", classes: "text-error bg-error/10" },
   };
 
 const BRANDS = [
@@ -46,15 +46,36 @@ const CATEGORIES: { value: CategoryFilter; label: string }[] = [
   { value: "women", label: "Women" },
   { value: "kids", label: "Kids" },
 ];
-const STATUS_FILTERS: { value: ProductStatus | "all"; label: string }[] = [
+const STATUS_FILTERS: { value: ProductStatus | "all" | "sold-out"; label: string }[] = [
   { value: "all", label: "All Status" },
   { value: "active", label: "Active" },
+  { value: "sold-out", label: "Sold Out" },
   { value: "draft", label: "Draft" },
-  { value: "sold", label: "Archived" },
+  { value: "archived", label: "Archived" },
 ];
 const ALL_SIZES = [
-  "35","36","37","38","39","40","41","42","43","44","45","46",
-  "7","7.5","8","8.5","9","9.5","10","10.5","11","12",
+  "35",
+  "36",
+  "37",
+  "38",
+  "39",
+  "40",
+  "41",
+  "42",
+  "43",
+  "44",
+  "45",
+  "46",
+  "7",
+  "7.5",
+  "8",
+  "8.5",
+  "9",
+  "9.5",
+  "10",
+  "10.5",
+  "11",
+  "12",
 ];
 const ALL_CATEGORIES = ["men", "women", "kids"] as const;
 const SUB_CATEGORIES: { value: SubCategory; label: string }[] = [
@@ -74,6 +95,7 @@ interface ProductForm {
   subCategory: SubCategory;
   stock: string;
   status: ProductStatus;
+  isNew: boolean;
   images: { url: string; alt: string; order: number }[];
 }
 
@@ -87,6 +109,7 @@ const EMPTY_FORM: ProductForm = {
   subCategory: "sneakers",
   stock: "",
   status: "active",
+  isNew: false,
   images: [],
 };
 
@@ -97,10 +120,10 @@ function StockBar({ stock }: { stock: number }) {
     stock === 0
       ? "bg-error"
       : stock <= 3
-      ? "bg-[#ffb5a0]"
-      : stock <= 10
-      ? "bg-primary"
-      : "bg-secondary";
+        ? "bg-[#ffb5a0]"
+        : stock <= 10
+          ? "bg-primary"
+          : "bg-secondary";
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 h-1 bg-surface-elevated max-w-[48px]">
@@ -112,14 +135,14 @@ function StockBar({ stock }: { stock: number }) {
           stock === 0
             ? "text-error"
             : stock <= 3
-            ? "text-[#ffb5a0]"
-            : "text-text"
+              ? "text-primary-muted"
+              : "text-text",
         )}
       >
         {stock}
       </span>
       {stock <= 3 && stock > 0 && (
-        <span className="font-body text-[9px] font-bold bg-[#ffb5a0]/10 text-[#ffb5a0] px-1 py-0.5 uppercase tracking-wide shrink-0">
+        <span className="font-body text-[9px] font-bold bg-primary-muted/10 text-primary-muted px-1 py-0.5 uppercase tracking-wide shrink-0">
           Low
         </span>
       )}
@@ -131,8 +154,8 @@ export default function AdminProductsPage() {
   const [search, setSearch] = useState("");
   const [brandFilter, setBrandFilter] = useState<BrandFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
-  const [statusFilter, setStatusFilter] = useState<ProductStatus | "all">(
-    "all"
+  const [statusFilter, setStatusFilter] = useState<ProductStatus | "all" | "sold-out">(
+    "all",
   );
   const [slideOpen, setSlideOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
@@ -143,12 +166,15 @@ export default function AdminProductsPage() {
   const { data, isLoading, isError } = useProducts({
     search: search || undefined,
     category: categoryFilter !== "all" ? categoryFilter : undefined,
-    status: statusFilter !== "all" ? statusFilter : undefined,
+    status: statusFilter === "sold-out" ? "active" : statusFilter !== "all" ? statusFilter : "all",
     brand: brandFilter !== "all" ? brandFilter : undefined,
     limit: 100,
   });
 
-  const products = data?.data ?? [];
+  const allProducts = data?.data ?? [];
+  const products = statusFilter === "sold-out"
+    ? allProducts.filter((p) => p.stock === 0)
+    : allProducts;
 
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
@@ -167,39 +193,46 @@ export default function AdminProductsPage() {
     setSlideOpen(true);
   }
 
-  const openEdit = useCallback((p: Product) => {
-    setEditProduct(p);
-    setForm({
-      name: p.name,
-      brand: p.brand,
-      price: String(p.price),
-      originalPrice: p.originalPrice ? String(p.originalPrice) : "",
-      description: p.description,
-      category: p.category,
-      subCategory: (p.subCategory as SubCategory) ?? "sneakers",
-      stock: String(p.stock),
-      status: p.status,
-      images: p.images.map((img) => ({
-        url: img.url,
-        alt: img.alt,
-        order: img.order,
-      })),
-    });
-    updateProduct.reset();
-    setSlideOpen(true);
-  }, [updateProduct]);
+  const openEdit = useCallback(
+    (p: Product) => {
+      setEditProduct(p);
+      setForm({
+        name: p.name,
+        brand: p.brand,
+        price: String(p.price),
+        originalPrice: p.originalPrice ? String(p.originalPrice) : "",
+        description: p.description,
+        category: p.category,
+        subCategory: (p.subCategory as SubCategory) ?? "sneakers",
+        stock: String(p.stock),
+        status: p.status,
+        isNew: p.isNew ?? false,
+        images: p.images.map((img) => ({
+          url: img.url,
+          alt: img.alt,
+          order: img.order,
+        })),
+      });
+      updateProduct.reset();
+      setSlideOpen(true);
+    },
+    [updateProduct],
+  );
 
   function buildPayload(overrideStatus?: ProductStatus) {
     return {
       name: form.name,
       brand: form.brand,
       price: Number(form.price),
-      originalPrice: form.originalPrice ? Number(form.originalPrice) : undefined,
+      originalPrice: form.originalPrice
+        ? Number(form.originalPrice)
+        : undefined,
       category: form.category,
       subCategory: form.subCategory,
       description: form.description,
       stock: Number(form.stock),
       status: overrideStatus ?? form.status,
+      isNew: form.isNew,
       sizes: [],
       images: form.images,
     };
@@ -214,7 +247,7 @@ export default function AdminProductsPage() {
           onSuccess: () => {
             setTimeout(() => setSlideOpen(false), 800);
           },
-        }
+        },
       );
     } else {
       createProduct.mutate(payload, {
@@ -266,7 +299,7 @@ export default function AdminProductsPage() {
 
   const toggleSizeReal = useCallback((s: string) => {
     setSelectedSizes((prev) =>
-      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s],
     );
   }, []);
 
@@ -292,6 +325,7 @@ export default function AdminProductsPage() {
         subCategory: (p.subCategory as SubCategory) ?? "sneakers",
         stock: String(p.stock),
         status: p.status,
+        isNew: p.isNew ?? false,
         images: p.images.map((img) => ({
           url: img.url,
           alt: img.alt,
@@ -301,7 +335,7 @@ export default function AdminProductsPage() {
       updateProduct.reset();
       setSlideOpen(true);
     },
-    [updateProduct]
+    [updateProduct],
   );
 
   function buildFullPayload(overrideStatus?: ProductStatus) {
@@ -317,6 +351,7 @@ export default function AdminProductsPage() {
       description: form.description,
       stock: Number(form.stock),
       status: overrideStatus ?? form.status,
+      isNew: form.isNew,
       sizes: selectedSizes,
       images: form.images,
     };
@@ -327,7 +362,7 @@ export default function AdminProductsPage() {
     if (editProduct) {
       updateProduct.mutate(
         { id: editProduct.id, data: payload },
-        { onSuccess: () => setTimeout(() => setSlideOpen(false), 800) }
+        { onSuccess: () => setTimeout(() => setSlideOpen(false), 800) },
       );
     } else {
       createProduct.mutate(payload, {
@@ -342,8 +377,15 @@ export default function AdminProductsPage() {
     (createProduct.error as ApiError | null)?.message ??
     (updateProduct.error as ApiError | null)?.message;
 
-  const set = (field: keyof ProductForm, value: string | ProductStatus | SubCategory | { url: string; alt: string; order: number }[]) =>
-    setForm((f) => ({ ...f, [field]: value }));
+  const set = (
+    field: keyof ProductForm,
+    value:
+      | string
+      | boolean
+      | ProductStatus
+      | SubCategory
+      | { url: string; alt: string; order: number }[],
+  ) => setForm((f) => ({ ...f, [field]: value }));
 
   return (
     <div className="space-y-5">
@@ -401,7 +443,7 @@ export default function AdminProductsPage() {
                 "px-2.5 py-1 font-body text-[11px] font-semibold border transition-all",
                 brandFilter === b
                   ? "bg-primary text-white border-primary"
-                  : "bg-surface text-text-muted border-border hover:border-outline hover:text-text"
+                  : "bg-surface text-text-muted border-border hover:border-outline hover:text-text",
               )}
             >
               {b === "all" ? "All Brands" : b}
@@ -425,7 +467,7 @@ export default function AdminProductsPage() {
                   "px-2.5 py-1 font-body text-[11px] font-semibold border transition-all",
                   categoryFilter === value
                     ? "bg-primary text-white border-primary"
-                    : "bg-surface text-text-muted border-border hover:border-outline hover:text-text"
+                    : "bg-surface text-text-muted border-border hover:border-outline hover:text-text",
                 )}
               >
                 {label}
@@ -447,7 +489,7 @@ export default function AdminProductsPage() {
                   "px-2.5 py-1 font-body text-[11px] font-semibold border transition-all",
                   statusFilter === value
                     ? "bg-primary text-white border-primary"
-                    : "bg-surface text-text-muted border-border hover:border-outline hover:text-text"
+                    : "bg-surface text-text-muted border-border hover:border-outline hover:text-text",
                 )}
               >
                 {label}
@@ -464,7 +506,9 @@ export default function AdminProductsPage() {
         </div>
       ) : isError ? (
         <div className="border border-error/30 bg-error/5 px-5 py-4">
-          <p className="font-body text-sm text-error">Failed to load products</p>
+          <p className="font-body text-sm text-error">
+            Failed to load products
+          </p>
         </div>
       ) : (
         <div className="border border-border bg-surface overflow-x-auto">
@@ -568,15 +612,20 @@ export default function AdminProductsPage() {
                       <StockBar stock={product.stock} />
                     </div>
 
-                    <div className="hidden lg:block">
+                    <div className="hidden lg:flex items-center gap-1.5">
                       <span
                         className={cn(
                           "px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider",
-                          STATUS_CONFIG[product.status]?.classes ?? ""
+                          STATUS_CONFIG[product.status]?.classes ?? "",
                         )}
                       >
                         {STATUS_CONFIG[product.status]?.label ?? product.status}
                       </span>
+                      {product.status === "active" && product.stock === 0 && (
+                        <span className="px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10">
+                          Sold Out
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-1 ml-auto lg:ml-0">
@@ -601,7 +650,7 @@ export default function AdminProductsPage() {
                       <button
                         onClick={() =>
                           setDeleteId(
-                            deleteId === product.id ? null : product.id
+                            deleteId === product.id ? null : product.id,
                           )
                         }
                         className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 transition-colors"
@@ -667,27 +716,23 @@ export default function AdminProductsPage() {
                     chevron_left
                   </span>
                 </button>
-                {Array.from(
-                  { length: Math.min(5, totalPages) },
-                  (_, i) => {
-                    const p =
-                      Math.max(1, Math.min(totalPages - 4, page - 2)) + i;
-                    return (
-                      <button
-                        key={p}
-                        onClick={() => setPage(p)}
-                        className={cn(
-                          "w-7 h-7 font-body text-xs font-semibold transition-colors",
-                          p === page
-                            ? "bg-primary text-white"
-                            : "text-text-muted hover:text-text hover:bg-surface-elevated"
-                        )}
-                      >
-                        {p}
-                      </button>
-                    );
-                  }
-                )}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const p = Math.max(1, Math.min(totalPages - 4, page - 2)) + i;
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={cn(
+                        "w-7 h-7 font-body text-xs font-semibold transition-colors",
+                        p === page
+                          ? "bg-primary text-white"
+                          : "text-text-muted hover:text-text hover:bg-surface-elevated",
+                      )}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
@@ -759,9 +804,7 @@ export default function AdminProductsPage() {
                 disabled={isSaving}
                 className="flex items-center gap-2 bg-primary text-white px-4 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors disabled:opacity-60"
               >
-                {isSaving ? (
-                  <Spinner size="sm" className="text-white" />
-                ) : null}
+                {isSaving ? <Spinner size="sm" className="text-white" /> : null}
                 {editProduct ? "Update" : "Publish"}
               </button>
             </div>
@@ -835,7 +878,7 @@ export default function AdminProductsPage() {
                         "px-3 py-1.5 font-body text-xs font-semibold border transition-all",
                         form.subCategory === value
                           ? "bg-primary text-white border-primary"
-                          : "bg-background text-text-muted border-border hover:border-outline"
+                          : "bg-background text-text-muted border-border hover:border-outline",
                       )}
                     >
                       {label}
@@ -898,7 +941,7 @@ export default function AdminProductsPage() {
               Number(form.originalPrice) > Number(form.price) && (
                 <p className="font-body text-xs text-secondary mt-1.5">
                   {Math.round(
-                    (1 - Number(form.price) / Number(form.originalPrice)) * 100
+                    (1 - Number(form.price) / Number(form.originalPrice)) * 100,
                   )}
                   % discount
                 </p>
@@ -920,7 +963,7 @@ export default function AdminProductsPage() {
                     "px-2.5 py-1.5 font-body text-xs font-semibold border transition-all",
                     selectedSizes.includes(s)
                       ? "bg-primary text-white border-primary"
-                      : "bg-background text-text-muted border-border hover:border-outline"
+                      : "bg-background text-text-muted border-border hover:border-outline",
                   )}
                 >
                   {s}
@@ -984,9 +1027,7 @@ export default function AdminProductsPage() {
                 </span>
               )}
               <p className="font-body text-sm font-semibold text-text-muted">
-                {uploadImage.isPending
-                  ? "Uploading…"
-                  : "Click to upload image"}
+                {uploadImage.isPending ? "Uploading…" : "Click to upload image"}
               </p>
               <p className="font-body text-[10px] text-text-muted/50 mt-0.5">
                 PNG, JPG up to 10MB
@@ -1005,7 +1046,7 @@ export default function AdminProductsPage() {
               Status
             </h3>
             <div className="flex gap-2">
-              {(["active", "draft", "sold"] as ProductStatus[]).map((s) => (
+              {(["active", "draft", "archived"] as ProductStatus[]).map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -1014,22 +1055,63 @@ export default function AdminProductsPage() {
                     "flex-1 px-3 py-2 border text-center transition-all",
                     form.status === s
                       ? "border-primary bg-primary/10"
-                      : "border-border hover:border-outline"
+                      : "border-border hover:border-outline",
                   )}
                 >
                   <p
                     className={cn(
                       "font-body text-xs font-bold uppercase tracking-wider",
-                      form.status === s ? "text-primary" : "text-text-muted"
+                      form.status === s ? "text-primary" : "text-text-muted",
                     )}
                   >
-                    {s === "sold"
-                      ? "Archived"
-                      : s.charAt(0).toUpperCase() + s.slice(1)}
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
                   </p>
                 </button>
               ))}
             </div>
+          </section>
+
+          {/* New arrival toggle */}
+          <section>
+            <h3 className="font-body text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-3">
+              Badges
+            </h3>
+            <button
+              type="button"
+              onClick={() => set("isNew", !form.isNew)}
+              className={cn(
+                "flex items-center gap-3 w-full px-3 py-2.5 border transition-all",
+                form.isNew
+                  ? "border-secondary bg-secondary/10"
+                  : "border-border hover:border-outline",
+              )}
+            >
+              <div
+                className={cn(
+                  "w-4 h-4 border-2 flex items-center justify-center shrink-0 transition-colors",
+                  form.isNew ? "border-secondary bg-secondary" : "border-border",
+                )}
+              >
+                {form.isNew && (
+                  <span className="material-symbols-outlined icon-fill text-background text-[12px] leading-none">
+                    check
+                  </span>
+                )}
+              </div>
+              <div className="text-left">
+                <p
+                  className={cn(
+                    "font-body text-xs font-bold uppercase tracking-wider",
+                    form.isNew ? "text-secondary" : "text-text-muted",
+                  )}
+                >
+                  Mark as New Arrival
+                </p>
+                <p className="font-body text-[10px] text-text-muted mt-0.5">
+                  Shows &quot;New&quot; badge on product card
+                </p>
+              </div>
+            </button>
           </section>
         </div>
       </SlideOver>

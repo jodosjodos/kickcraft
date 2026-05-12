@@ -67,7 +67,6 @@ export function ProductDetail({ slug }: ProductDetailProps) {
   const { addItem } = useCart();
   const { isWishlisted, toggle } = useWishlist();
   const [selectedSize, setSelectedSize] = useState<string>("");
-  const [selectedColor, setSelectedColor] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<TabKey>("description");
   const [addedToCart, setAddedToCart] = useState(false);
@@ -100,12 +99,11 @@ export function ProductDetail({ slug }: ProductDetailProps) {
     );
   }
 
-  const isSoldOut = product.status === "sold" || product.stock === 0;
+  const isSoldOut = product.stock === 0;
   const isOnSale =
     product.originalPrice !== undefined && product.originalPrice > product.price;
   const gradient = cardGradient(product.id);
   const wishlisted = isWishlisted(product.id);
-  const colors = product.colors ?? [];
 
   function handleAddToCart() {
     if (!selectedSize || isSoldOut || !product) return;
@@ -193,7 +191,7 @@ export function ProductDetail({ slug }: ProductDetailProps) {
             {/* Rating */}
             {product.rating !== undefined && (
               <div className="mb-3">
-                <StarRating rating={product.rating} count={product.reviewCount} />
+                <StarRating rating={Number(product.rating)} count={product.reviewCount} />
               </div>
             )}
 
@@ -228,35 +226,6 @@ export function ProductDetail({ slug }: ProductDetailProps) {
             </p>
           )}
 
-          {/* Color swatches */}
-          {colors.length > 0 && (
-            <div>
-              <p className="font-body text-xs font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">
-                Color
-                {selectedColor && (
-                  <span className="ml-2 font-normal capitalize text-text">
-                    — {selectedColor}
-                  </span>
-                )}
-              </p>
-              <div className="flex items-center gap-2">
-                {colors.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setSelectedColor(color)}
-                    aria-label={color}
-                    className={cn(
-                      "w-7 h-7 rounded-full border-2 transition-all duration-150",
-                      selectedColor === color
-                        ? "border-primary scale-110"
-                        : "border-transparent hover:border-outline"
-                    )}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Size picker */}
           {!isSoldOut && (
@@ -478,9 +447,9 @@ export function ProductDetail({ slug }: ProductDetailProps) {
                 <div className="flex items-center gap-4 mb-6">
                   <div className="text-center">
                     <p className="font-heading text-4xl font-extrabold text-text">
-                      {product.rating.toFixed(1)}
+                      {Number(product.rating).toFixed(1)}
                     </p>
-                    <StarRating rating={product.rating} />
+                    <StarRating rating={Number(product.rating)} />
                     <p className="font-body text-xs text-text-muted mt-1">
                       {product.reviewCount ?? 0} reviews
                     </p>

@@ -6,6 +6,8 @@ import {
   ProductSubCategory,
 } from '../product.entity';
 
+type StatusFilter = ProductStatus | 'all';
+
 export class ProductQueryDto {
   @IsOptional()
   @IsEnum(ProductCategory)
@@ -44,8 +46,8 @@ export class ProductQueryDto {
   brand?: string;
 
   @IsOptional()
-  @IsEnum(ProductStatus)
-  status?: ProductStatus;
+  @IsIn([...Object.values(ProductStatus), 'all'])
+  status?: StatusFilter;
 
   @IsOptional()
   @IsInt()

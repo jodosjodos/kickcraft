@@ -32,7 +32,7 @@ export async function getSimilarProducts(
   subCategory: string
 ): Promise<Product[]> {
   const res = await apiClient.get<PaginatedResponse<Product>>("/products", {
-    params: { subCategory, limit: 5 },
+    params: { subCategory, limit: 5, status: "active" },
   });
   return res.data.data.filter((p) => p.id !== productId).slice(0, 4);
 }

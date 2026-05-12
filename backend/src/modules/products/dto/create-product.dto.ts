@@ -75,11 +75,6 @@ export class CreateProductDto {
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  colors?: string[];
-
-  @IsOptional()
-  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ProductImageDto)
   images?: ProductImageDto[];
