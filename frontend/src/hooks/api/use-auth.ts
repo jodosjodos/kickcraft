@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
+import { useCart } from "@/providers/cart-provider";
 import * as authService from "@/services/auth.service";
 import { queryKeys } from "@/lib/query-keys";
 import type {
@@ -27,6 +28,7 @@ export function useMe() {
 
 export function useLogin() {
   const { setUser } = useAuth();
+  const { switchUser } = useCart();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -34,6 +36,7 @@ export function useLogin() {
     mutationFn: authService.login,
     onSuccess: (user) => {
       setUser(user);
+      switchUser(user.id);
       const redirect = searchParams.get("redirect");
       if (user.role === "admin") {
         router.push(redirect ?? "/admin/dashboard");
@@ -88,6 +91,7 @@ export function useChangePassword() {
 
 export function useLogout() {
   const { logout } = useAuth();
+  const { switchUser } = useCart();
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -96,7 +100,7 @@ export function useLogout() {
     onSuccess: () => {
       queryClient.clear();
       logout();
-      localStorage.removeItem("kickcraft_cart");
+      switchUser(); // switches to guest key (empty cart) — updates React state immediately
       router.push("/");
     },
   });

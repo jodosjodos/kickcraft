@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { LocalCartItem } from "@/types/api/orders";
 
 interface CartContextValue {
@@ -9,50 +9,60 @@ interface CartContextValue {
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
+  switchUser: (userId?: string) => void;
   total: number;
   itemCount: number;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-const STORAGE_KEY = "kickcraft_cart";
+const GUEST_KEY = "kickcraft_cart";
 
-function loadCart(): LocalCartItem[] {
+function storageKey(userId?: string) {
+  return userId ? `kickcraft_cart_u_${userId}` : GUEST_KEY;
+}
+
+function loadFrom(key: string): LocalCartItem[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as LocalCartItem[]) : [];
   } catch {
     return [];
   }
 }
 
-function saveCart(items: LocalCartItem[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+function saveTo(key: string, items: LocalCartItem[]) {
+  localStorage.setItem(key, JSON.stringify(items));
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<LocalCartItem[]>([]);
+  const keyRef = useRef<string>(GUEST_KEY);
 
   useEffect(() => {
-    setItems(loadCart());
+    setItems(loadFrom(GUEST_KEY));
   }, []);
+
+  function save(next: LocalCartItem[]) {
+    saveTo(keyRef.current, next);
+  }
+
+  function switchUser(userId?: string) {
+    const newKey = storageKey(userId);
+    keyRef.current = newKey;
+    const loaded = loadFrom(newKey);
+    setItems(loaded);
+  }
 
   function addItem(item: Omit<LocalCartItem, "id">) {
     const id = `${item.productId}-${item.size}`;
     setItems((prev) => {
       const existing = prev.find((i) => i.id === id);
-      let next: LocalCartItem[];
-      if (existing) {
-        next = prev.map((i) =>
-          i.id === id
-            ? { ...i, quantity: i.quantity + item.quantity }
-            : i
-        );
-      } else {
-        next = [...prev, { ...item, id }];
-      }
-      saveCart(next);
+      const next = existing
+        ? prev.map((i) => i.id === id ? { ...i, quantity: i.quantity + item.quantity } : i)
+        : [...prev, { ...item, id }];
+      save(next);
       return next;
     });
   }
@@ -60,26 +70,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   function removeItem(id: string) {
     setItems((prev) => {
       const next = prev.filter((i) => i.id !== id);
-      saveCart(next);
+      save(next);
       return next;
     });
   }
 
   function updateQuantity(id: string, quantity: number) {
-    if (quantity < 1) {
-      removeItem(id);
-      return;
-    }
+    if (quantity < 1) { removeItem(id); return; }
     setItems((prev) => {
-      const next = prev.map((i) => (i.id === id ? { ...i, quantity } : i));
-      saveCart(next);
+      const next = prev.map((i) => i.id === id ? { ...i, quantity } : i);
+      save(next);
       return next;
     });
   }
 
   function clearCart() {
-    setItems([]);
-    saveCart([]);
+    const next: LocalCartItem[] = [];
+    setItems(next);
+    save(next);
   }
 
   const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
@@ -87,7 +95,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, removeItem, updateQuantity, clearCart, total, itemCount }}
+      value={{ items, addItem, removeItem, updateQuantity, clearCart, switchUser, total, itemCount }}
     >
       {children}
     </CartContext.Provider>
