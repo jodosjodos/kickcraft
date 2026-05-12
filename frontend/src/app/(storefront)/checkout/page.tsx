@@ -125,7 +125,7 @@ export default function CheckoutPage() {
 
   function handleDeliveryNext(e: React.FormEvent) {
     e.preventDefault();
-    setStep(2);
+    setStep(form.deliveryMethod === "pickup" ? 3 : 2);
   }
 
   function handlePaymentNext() {
@@ -412,25 +412,43 @@ export default function CheckoutPage() {
                     <span className="text-text">+250 {form.phone}</span>
                   </div>
                   <div className="flex justify-between font-body text-sm">
-                    <span className="text-text-muted">Delivery</span>
+                    <span className="text-text-muted">Method</span>
                     <span className="text-text capitalize">
                       {form.deliveryMethod === "delivery"
-                        ? `${form.district}, ${form.sector}`
-                        : "Pickup"}
+                        ? `Delivery — ${form.district}, ${form.sector}`
+                        : "Store Pickup"}
                     </span>
                   </div>
                 </div>
 
-                <div className="border-t border-border pt-4">
-                  <div className="flex justify-between font-body text-sm text-text-muted mb-1">
-                    <span>Paid now (50%)</span>
-                    <span className="text-secondary font-semibold">{formatPrice(upfront)}</span>
+                {form.deliveryMethod === "pickup" ? (
+                  <div className="border-t border-border pt-4 bg-surface-elevated px-4 py-3">
+                    <div className="flex items-start gap-3">
+                      <span className="material-symbols-outlined icon-outline text-[20px] text-secondary shrink-0 mt-0.5">
+                        store
+                      </span>
+                      <div>
+                        <p className="font-body text-sm font-semibold text-text">
+                          Pay in full at pickup
+                        </p>
+                        <p className="font-body text-xs text-text-muted mt-0.5">
+                          Come to our Kigali store and pay {formatPrice(orderTotal)} on collection. We&apos;ll contact you to confirm when your order is ready.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between font-body text-sm text-text-muted">
-                    <span>Due on delivery</span>
-                    <span className="text-text">{formatPrice(onDelivery)}</span>
+                ) : (
+                  <div className="border-t border-border pt-4">
+                    <div className="flex justify-between font-body text-sm text-text-muted mb-1">
+                      <span>Paid now (50%)</span>
+                      <span className="text-secondary font-semibold">{formatPrice(upfront)}</span>
+                    </div>
+                    <div className="flex justify-between font-body text-sm text-text-muted">
+                      <span>Due on delivery</span>
+                      <span className="text-text">{formatPrice(onDelivery)}</span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {orderError && (
@@ -444,7 +462,7 @@ export default function CheckoutPage() {
                   variant="ghost"
                   size="lg"
                   className="flex-1"
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(form.deliveryMethod === "pickup" ? 1 : 2)}
                   disabled={createOrder.isPending}
                 >
                   Back

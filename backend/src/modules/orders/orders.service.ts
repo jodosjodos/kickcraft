@@ -168,7 +168,26 @@ export class OrdersService {
   }
 
   async updateStatus(id: string, dto: UpdateOrderStatusDto): Promise<Order> {
-    const order = await this.findOne(id);
+    const order = await this.orderRepo.findOne({
+      where: { id },
+      relations: ['items'],
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    // Restore stock when cancelling a non-already-cancelled order
+    if (
+      dto.status === OrderStatus.Cancelled &&
+      order.status !== OrderStatus.Cancelled
+    ) {
+      for (const item of order.items) {
+        await this.productRepo.increment(
+          { id: item.productId },
+          'stock',
+          item.quantity,
+        );
+      }
+    }
+
     order.status = dto.status;
     if (dto.status === OrderStatus.Cancelled && dto.cancelReason) {
       order.cancelReason = dto.cancelReason;

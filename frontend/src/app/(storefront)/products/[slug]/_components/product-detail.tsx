@@ -367,7 +367,7 @@ export function ProductDetail({ slug }: ProductDetailProps) {
                 Fast Delivery
               </p>
               <p className="font-body text-[10px] text-text-muted/60 leading-tight">
-                Within Kigali
+                2,000 RWF · Kigali
               </p>
             </div>
             <div className="text-center">

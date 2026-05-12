@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
+import { useLogout } from "@/hooks/api/use-auth";
 import { useMyOrders } from "@/hooks/api/use-orders";
 import { cn } from "@/lib/utils";
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useState } from "react";
 
 const NAV_SECTIONS = [
   {
@@ -51,8 +52,8 @@ function getInitials(name: string): string {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading } = useAuth();
+  const logoutMutation = useLogout();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: orders } = useMyOrders();
 
@@ -60,19 +61,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const MOCK_REVIEW_COUNT = 3;
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && (!user || user.role !== "admin")) {
       if (!user) {
-        router.replace(`/auth/login?redirect=${encodeURIComponent(pathname)}`);
-      } else if (user.role !== "admin") {
-        router.replace("/");
+        window.location.replace(`/auth/login?redirect=${encodeURIComponent(pathname)}`);
+      } else {
+        window.location.replace("/");
       }
     }
-  }, [user, isLoading, pathname, router]);
-
-  const handleLogout = useCallback(() => {
-    logout();
-    router.replace("/");
-  }, [logout, router]);
+  }, [user, isLoading, pathname]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -179,8 +175,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           View Store
         </Link>
         <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2 font-body text-[13px] text-text-muted hover:text-error hover:bg-surface-elevated transition-all duration-150 w-full text-left"
+          onClick={() => logoutMutation.mutate()}
+          disabled={logoutMutation.isPending}
+          className="flex items-center gap-3 px-3 py-2 font-body text-[13px] text-text-muted hover:text-error hover:bg-surface-elevated transition-all duration-150 w-full text-left disabled:opacity-60"
         >
           <span className="material-symbols-outlined icon-outline text-[17px] shrink-0">logout</span>
           Sign Out

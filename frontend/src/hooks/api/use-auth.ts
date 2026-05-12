@@ -96,6 +96,7 @@ export function useLogout() {
     onSuccess: () => {
       queryClient.clear();
       logout();
+      localStorage.removeItem("kickcraft_cart");
       router.push("/");
     },
   });

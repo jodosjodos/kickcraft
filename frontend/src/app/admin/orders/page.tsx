@@ -43,11 +43,17 @@ function OrderPanel({ order, onClose }: { order: Order; onClose: () => void }) {
 
   function handleAdvance() {
     if (!nextAction) return;
-    updateStatus.mutate({ id: order.id, status: nextAction.next });
+    updateStatus.mutate(
+      { id: order.id, status: nextAction.next },
+      { onSuccess: onClose }
+    );
   }
 
   function handleCancel() {
-    updateStatus.mutate({ id: order.id, status: "cancelled" });
+    updateStatus.mutate(
+      { id: order.id, status: "cancelled" },
+      { onSuccess: onClose }
+    );
   }
 
   return (
@@ -156,7 +162,7 @@ function OrderPanel({ order, onClose }: { order: Order; onClose: () => void }) {
         <div className="border border-border bg-surface">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">
             <h3 className="font-heading text-xs font-extrabold uppercase tracking-tight text-text">Items</h3>
-            <span className="font-body text-[10px] text-text-muted">{order.items.length} {order.items.length === 1 ? "item" : "items"}</span>
+            <span className="font-body text-[10px] text-text-muted">{order.items.reduce((s, i) => s + i.quantity, 0)} {order.items.reduce((s, i) => s + i.quantity, 0) === 1 ? "item" : "items"}</span>
           </div>
           <div className="divide-y divide-border">
             {order.items.map((item) => (
@@ -298,7 +304,7 @@ export default function AdminOrdersPage() {
                     <p className="font-body text-[10px] text-text-muted mt-0.5 md:hidden">{formatDate(order.createdAt)} · +{order.phone}</p>
                   </div>
                   <p className="hidden md:block font-body text-xs text-text-muted truncate">+{order.phone}</p>
-                  <p className="hidden md:block font-body text-sm text-text">{order.items.length}</p>
+                  <p className="hidden md:block font-body text-sm text-text">{order.items.reduce((s, i) => s + i.quantity, 0)}</p>
                   <div className="hidden md:flex items-center gap-1.5">
                     <span className="material-symbols-outlined icon-outline text-[14px] text-text-muted">
                       {DELIVERY_ICONS[order.deliveryMethod] ?? "local_shipping"}
