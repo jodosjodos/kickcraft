@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { useOrder } from "@/hooks/api/use-orders";
+import { useMyOrder } from "@/hooks/api/use-orders";
 import { OrderStatusBadge } from "@/components/ui/order-status-badge";
 import { Spinner } from "@/components/ui/spinner";
 import { formatPrice, formatDate } from "@/lib/utils";
@@ -114,7 +114,7 @@ type Props = { params: Promise<{ id: string }> };
 
 export default function OrderDetailPage({ params }: Props) {
   const { id } = use(params);
-  const { data: order, isLoading, isError, error } = useOrder(id);
+  const { data: order, isLoading, isError, error } = useMyOrder(id);
 
   if (isLoading) {
     return (
@@ -140,8 +140,8 @@ export default function OrderDetailPage({ params }: Props) {
     );
   }
 
-  const upfront = Math.ceil(order.total / 2);
-  const onDelivery = Math.floor(order.total / 2);
+  const upfront = Math.ceil(order.subtotal / 2);
+  const onDelivery = Math.floor(order.subtotal / 2);
   const isPaid = order.paymentPhase === "fully_paid";
 
   return (
@@ -220,10 +220,10 @@ export default function OrderDetailPage({ params }: Props) {
             <div key={item.id} className="flex justify-between items-center">
               <div>
                 <p className="font-body text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted">
-                  {item.product.brand}
+                  {item.productBrand}
                 </p>
                 <p className="font-body text-sm text-text font-semibold">
-                  {item.product.name}
+                  {item.productName}
                 </p>
                 <p className="font-body text-xs text-text-muted">
                   Size {item.size} · ×{item.quantity}

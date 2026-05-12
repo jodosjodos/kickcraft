@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/providers/cart-provider";
+import { useCreateOrder } from "@/hooks/api/use-orders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatPrice } from "@/lib/utils";
@@ -88,6 +89,7 @@ function StepIndicator({ step }: { step: Step }) {
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, total, clearCart } = useCart();
+  const createOrder = useCreateOrder();
   const [step, setStep] = useState<Step>(1);
   const [form, setForm] = useState<CheckoutForm>({
     name: "",
@@ -97,10 +99,9 @@ export default function CheckoutPage() {
     district: DISTRICTS[0],
     sector: "",
   });
-  const [submitting, setSubmitting] = useState(false);
+  const [orderError, setOrderError] = useState<string>("");
 
-  const deliveryFee =
-    form.deliveryMethod === "pickup" ? 0 : total >= 20000 ? 0 : 2000;
+  const deliveryFee = form.deliveryMethod === "pickup" ? 0 : 2000;
   const orderTotal = total + deliveryFee;
   const upfront = Math.ceil(orderTotal / 2);
   const onDelivery = Math.floor(orderTotal / 2);
@@ -132,38 +133,54 @@ export default function CheckoutPage() {
   }
 
   async function handleConfirm() {
-    setSubmitting(true);
-    const orderNum = "KC-" + Math.floor(10000 + Math.random() * 90000);
-
-    sessionStorage.setItem(
-      "last_order",
-      JSON.stringify({
-        orderNumber: orderNum,
+    setOrderError("");
+    createOrder.mutate(
+      {
         items: items.map((item) => ({
-          name: item.name,
-          brand: item.brand,
+          productId: item.productId,
           size: item.size,
           quantity: item.quantity,
-          price: item.price,
-          imageUrl: item.imageUrl ?? null,
         })),
-        subtotal: total,
-        deliveryFee,
-        orderTotal,
-        upfront,
-        onDelivery,
         deliveryMethod: form.deliveryMethod,
+        phone: `+250${form.phone.replace(/\s/g, "")}`,
+        email: form.email || undefined,
         deliveryAddress:
           form.deliveryMethod === "delivery"
             ? `${form.district}, ${form.sector}`
-            : null,
-        phone: form.phone,
-      })
+            : undefined,
+      },
+      {
+        onSuccess: (order) => {
+          sessionStorage.setItem(
+            "last_order",
+            JSON.stringify({
+              orderNumber: order.orderToken,
+              items: items.map((item) => ({
+                name: item.name,
+                brand: item.brand,
+                size: item.size,
+                quantity: item.quantity,
+                price: item.price,
+                imageUrl: item.imageUrl ?? null,
+              })),
+              subtotal: order.subtotal,
+              deliveryFee: order.deliveryFee,
+              orderTotal: order.total,
+              upfront: Math.ceil(order.total / 2),
+              onDelivery: Math.floor(order.total / 2),
+              deliveryMethod: form.deliveryMethod,
+              deliveryAddress: order.deliveryAddress ?? null,
+              phone: form.phone,
+            })
+          );
+          clearCart();
+          router.push(`/checkout/confirmed?order=${order.orderToken}`);
+        },
+        onError: (err) => {
+          setOrderError(err.message ?? "Failed to place order. Please try again.");
+        },
+      }
     );
-
-    await new Promise((r) => setTimeout(r, 1000));
-    clearCart();
-    router.push(`/checkout/confirmed?order=${orderNum}`);
   }
 
   return (
@@ -416,12 +433,19 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
+              {orderError && (
+                <p className="font-body text-sm text-error bg-error/5 border border-error/20 px-4 py-3">
+                  {orderError}
+                </p>
+              )}
+
               <div className="flex gap-3">
                 <Button
                   variant="ghost"
                   size="lg"
                   className="flex-1"
                   onClick={() => setStep(2)}
+                  disabled={createOrder.isPending}
                 >
                   Back
                 </Button>
@@ -429,7 +453,7 @@ export default function CheckoutPage() {
                   variant="primary"
                   size="lg"
                   className="flex-1"
-                  loading={submitting}
+                  loading={createOrder.isPending}
                   onClick={handleConfirm}
                 >
                   <span className="material-symbols-outlined icon-outline text-[18px] mr-2">

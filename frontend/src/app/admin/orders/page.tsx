@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useMyOrders } from "@/hooks/api/use-orders";
+import { useAllOrders, useUpdateOrderStatus } from "@/hooks/api/use-orders";
 import { OrderStatusBadge } from "@/components/ui/order-status-badge";
 import { SlideOver } from "@/components/admin/slide-over";
 import { Spinner } from "@/components/ui/spinner";
@@ -36,14 +36,18 @@ const STEP_ICONS: Record<OrderStatus, string> = {
 const DELIVERY_ICONS: Record<string, string> = { delivery: "local_shipping", pickup: "store" };
 
 function OrderPanel({ order, onClose }: { order: Order; onClose: () => void }) {
-  const [advancing, setAdvancing] = useState(false);
+  const updateStatus = useUpdateOrderStatus();
   const currentFlowIndex = STATUS_FLOW.indexOf(order.status);
   const nextAction = STATUS_ACTIONS[order.status];
   const isCancelled = order.status === "cancelled";
 
   function handleAdvance() {
-    setAdvancing(true);
-    setTimeout(() => setAdvancing(false), 800);
+    if (!nextAction) return;
+    updateStatus.mutate({ id: order.id, status: nextAction.next });
+  }
+
+  function handleCancel() {
+    updateStatus.mutate({ id: order.id, status: "cancelled" });
   }
 
   return (
@@ -56,14 +60,15 @@ function OrderPanel({ order, onClose }: { order: Order; onClose: () => void }) {
       footer={
         <div className="flex items-center gap-2">
           {nextAction && (
-            <button onClick={handleAdvance} disabled={advancing}
+            <button onClick={handleAdvance} disabled={updateStatus.isPending}
               className="flex items-center gap-2 bg-primary text-white px-4 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors disabled:opacity-60 flex-1 justify-center">
-              {advancing ? <Spinner size="sm" className="text-white" /> : null}
+              {updateStatus.isPending ? <Spinner size="sm" className="text-white" /> : null}
               {nextAction.label}
             </button>
           )}
           {!isCancelled && order.status !== "delivered" && (
-            <button className="flex items-center gap-2 border border-error/40 text-error px-4 py-2 font-body text-xs font-semibold uppercase tracking-wider hover:bg-error/10 transition-colors">
+            <button onClick={handleCancel} disabled={updateStatus.isPending}
+              className="flex items-center gap-2 border border-error/40 text-error px-4 py-2 font-body text-xs font-semibold uppercase tracking-wider hover:bg-error/10 transition-colors disabled:opacity-60">
               Cancel
             </button>
           )}
@@ -160,8 +165,8 @@ function OrderPanel({ order, onClose }: { order: Order; onClose: () => void }) {
                   <span className="material-symbols-outlined icon-outline text-[18px] text-gray-400">inventory_2</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-body text-xs font-bold uppercase tracking-wider text-text-muted">{item.product.brand}</p>
-                  <p className="font-body text-sm font-semibold text-text truncate">{item.product.name}</p>
+                  <p className="font-body text-xs font-bold uppercase tracking-wider text-text-muted">{item.productBrand}</p>
+                  <p className="font-body text-sm font-semibold text-text truncate">{item.productName}</p>
                   <p className="font-body text-[10px] text-text-muted">Size {item.size} · Qty {item.quantity}</p>
                 </div>
                 <p className="font-heading text-sm font-extrabold text-text shrink-0">{formatPrice(item.price * item.quantity)}</p>
@@ -171,14 +176,19 @@ function OrderPanel({ order, onClose }: { order: Order; onClose: () => void }) {
           {/* Totals */}
           <div className="px-4 py-3 border-t border-border bg-surface-elevated space-y-1.5">
             <div className="flex justify-between font-body text-xs text-text-muted">
-              <span>Upfront paid (50%)</span><span className="text-secondary">{formatPrice(Math.ceil(order.total / 2))}</span>
+              <span>Upfront paid (50%)</span><span className="text-secondary">{formatPrice(Math.ceil(order.subtotal / 2))}</span>
             </div>
             <div className="flex justify-between font-body text-xs text-text-muted">
               <span>On delivery (50%)</span>
               <span className={order.paymentPhase === "fully_paid" ? "text-secondary" : "text-primary"}>
-                {order.paymentPhase === "fully_paid" ? "Paid" : formatPrice(Math.floor(order.total / 2))}
+                {order.paymentPhase === "fully_paid" ? "Paid" : formatPrice(Math.floor(order.subtotal / 2))}
               </span>
             </div>
+            {order.deliveryFee > 0 && (
+              <div className="flex justify-between font-body text-xs text-text-muted">
+                <span>Delivery fee</span><span>{formatPrice(order.deliveryFee)}</span>
+              </div>
+            )}
             <div className="flex justify-between font-heading text-sm font-extrabold text-text pt-1.5 border-t border-border">
               <span>Total</span><span>{formatPrice(order.total)}</span>
             </div>
@@ -192,9 +202,9 @@ function OrderPanel({ order, onClose }: { order: Order; onClose: () => void }) {
 export default function AdminOrdersPage() {
   const [activeTab, setActiveTab] = useState<OrderStatus | "all">("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const { data: orders, isLoading, isError } = useMyOrders();
+  const { data: ordersData, isLoading, isError } = useAllOrders();
 
-  const orderList = orders ?? [];
+  const orderList = ordersData?.data ?? [];
 
   const counts: Record<string, number> = {
     all: orderList.length,

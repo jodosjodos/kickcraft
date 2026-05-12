@@ -1,4 +1,5 @@
 import type { ProductFilters } from "@/types/api/products";
+import type { OrderFilters } from "@/types/api/orders";
 
 export const queryKeys = {
   auth: {
@@ -16,6 +17,7 @@ export const queryKeys = {
   },
   orders: {
     all: ["orders"] as const,
+    list: (filters: OrderFilters) => ["orders", "list", filters] as const,
     mine: () => ["orders", "mine"] as const,
     detail: (id: string) => ["orders", "detail", id] as const,
     byToken: (token: string) => ["orders", "token", token] as const,

@@ -100,7 +100,7 @@ export default function OrdersPage() {
               <div className="flex flex-col gap-1 min-w-0">
                 {order.items.map((item) => (
                   <p key={item.id} className="font-body text-sm text-text-muted truncate">
-                    {item.product.name}
+                    {item.productName}
                     <span className="text-text-muted/50 ml-1">
                       · Size {item.size} · ×{item.quantity}
                     </span>

@@ -1,5 +1,3 @@
-import type { Product } from "./products";
-
 export type OrderStatus =
   | "pending"
   | "confirmed"
@@ -7,20 +5,20 @@ export type OrderStatus =
   | "delivered"
   | "cancelled";
 
-export type PaymentPhase =
-  | "pending"
-  | "upfront_paid"
-  | "delivery_paid"
-  | "fully_paid";
+export type PaymentPhase = "pending" | "upfront_paid" | "fully_paid";
 
 export type DeliveryMethod = "delivery" | "pickup";
 
 export interface OrderItem {
   id: string;
-  product: Product;
+  productId: string;
+  productSlug: string;
+  productName: string;
+  productBrand: string;
+  price: number;
+  imageUrl?: string | null;
   size: string;
   quantity: number;
-  price: number;
 }
 
 export interface Order {
@@ -29,13 +27,17 @@ export interface Order {
   status: OrderStatus;
   paymentPhase: PaymentPhase;
   items: OrderItem[];
+  subtotal: number;
+  deliveryFee: number;
   total: number;
   deliveryMethod: DeliveryMethod;
-  deliveryAddress?: string;
+  deliveryAddress?: string | null;
   phone: string;
-  email?: string;
-  userId?: string;
+  email?: string | null;
+  userId?: string | null;
+  cancelReason?: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateOrderRequest {
@@ -50,13 +52,6 @@ export interface CreateOrderRequest {
   deliveryAddress?: string;
 }
 
-export interface CartItem {
-  productId: string;
-  product: Product;
-  size: string;
-  quantity: number;
-}
-
 export interface LocalCartItem {
   id: string;
   productId: string;
@@ -67,4 +62,11 @@ export interface LocalCartItem {
   imageUrl?: string;
   size: string;
   quantity: number;
+}
+
+export interface OrderFilters {
+  status?: OrderStatus;
+  paymentPhase?: PaymentPhase;
+  page?: number;
+  limit?: number;
 }

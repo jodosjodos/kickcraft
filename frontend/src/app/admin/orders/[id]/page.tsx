@@ -3,7 +3,7 @@
 import { use, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useOrder } from "@/hooks/api/use-orders";
+import { useAdminOrder, useUpdateOrderStatus, useUpdatePaymentPhase } from "@/hooks/api/use-orders";
 import { OrderStatusBadge } from "@/components/ui/order-status-badge";
 import { Spinner } from "@/components/ui/spinner";
 import { formatPrice, formatDate } from "@/lib/utils";
@@ -35,9 +35,10 @@ type Props = { params: Promise<{ id: string }> };
 
 export default function AdminOrderDetailPage({ params }: Props) {
   const { id } = use(params);
-  const { data: order, isLoading, isError, error } = useOrder(id);
+  const { data: order, isLoading, isError, error } = useAdminOrder(id);
+  const updateStatus = useUpdateOrderStatus();
+  const updatePayment = useUpdatePaymentPhase();
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const [updating, setUpdating] = useState(false);
 
   if (isLoading) {
     return (
@@ -69,8 +70,19 @@ export default function AdminOrderDetailPage({ params }: Props) {
   const currentFlowIndex = STATUS_FLOW.indexOf(order.status);
 
   const handleAdvance = () => {
-    setUpdating(true);
-    setTimeout(() => setUpdating(false), 800);
+    if (!nextAction) return;
+    updateStatus.mutate({ id: order.id, status: nextAction.next });
+  };
+
+  const handleCancelConfirm = () => {
+    updateStatus.mutate(
+      { id: order.id, status: "cancelled" },
+      { onSuccess: () => setConfirmCancel(false) }
+    );
+  };
+
+  const handleMarkDeliveryPaid = () => {
+    updatePayment.mutate({ id: order.id, paymentPhase: "fully_paid" });
   };
 
   return (
@@ -107,10 +119,10 @@ export default function AdminOrderDetailPage({ params }: Props) {
             {nextAction && (
               <button
                 onClick={handleAdvance}
-                disabled={updating}
+                disabled={updateStatus.isPending}
                 className="flex items-center gap-2 bg-primary text-white px-4 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors active:scale-95 disabled:opacity-60"
               >
-                {updating ? (
+                {updateStatus.isPending ? (
                   <Spinner size="sm" className="text-white" />
                 ) : (
                   <span className="material-symbols-outlined icon-filled text-[14px]">
@@ -141,11 +153,17 @@ export default function AdminOrderDetailPage({ params }: Props) {
           <div className="flex gap-2 shrink-0">
             <button
               onClick={() => setConfirmCancel(false)}
-              className="px-3 py-1.5 font-body text-xs font-semibold text-text-muted border border-border hover:border-outline transition-colors"
+              disabled={updateStatus.isPending}
+              className="px-3 py-1.5 font-body text-xs font-semibold text-text-muted border border-border hover:border-outline transition-colors disabled:opacity-60"
             >
               Keep
             </button>
-            <button className="px-3 py-1.5 font-body text-xs font-semibold bg-error text-white hover:opacity-90 transition-opacity">
+            <button
+              onClick={handleCancelConfirm}
+              disabled={updateStatus.isPending}
+              className="flex items-center gap-1.5 px-3 py-1.5 font-body text-xs font-semibold bg-error text-white hover:opacity-90 transition-opacity disabled:opacity-60"
+            >
+              {updateStatus.isPending && <Spinner size="sm" className="text-white" />}
               Cancel Order
             </button>
           </div>
@@ -227,10 +245,10 @@ export default function AdminOrderDetailPage({ params }: Props) {
                 <div key={item.id} className="flex items-center gap-4 px-5 py-4">
                   {/* Product image or placeholder */}
                   <div className="w-14 h-14 shrink-0 bg-[#F5F5F5] relative overflow-hidden">
-                    {item.product.images?.[0] ? (
+                    {item.imageUrl ? (
                       <Image
-                        src={item.product.images[0].url}
-                        alt={item.product.name}
+                        src={item.imageUrl}
+                        alt={item.productName}
                         fill
                         sizes="56px"
                         className="object-cover"
@@ -246,10 +264,10 @@ export default function AdminOrderDetailPage({ params }: Props) {
 
                   <div className="flex-1 min-w-0">
                     <p className="font-body text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                      {item.product.brand}
+                      {item.productBrand}
                     </p>
                     <p className="font-body text-sm font-semibold text-text truncate">
-                      {item.product.name}
+                      {item.productName}
                     </p>
                     <p className="font-body text-xs text-text-muted mt-0.5">
                       Size {item.size} · Qty {item.quantity}
@@ -274,12 +292,14 @@ export default function AdminOrderDetailPage({ params }: Props) {
             <div className="px-5 py-4 border-t border-border bg-surface-elevated space-y-2">
               <div className="flex justify-between font-body text-xs text-text-muted">
                 <span>Subtotal</span>
-                <span>{formatPrice(order.total)}</span>
+                <span>{formatPrice(order.subtotal)}</span>
               </div>
-              <div className="flex justify-between font-body text-xs text-text-muted">
-                <span>Delivery</span>
-                <span className="text-secondary">Free</span>
-              </div>
+              {order.deliveryFee > 0 && (
+                <div className="flex justify-between font-body text-xs text-text-muted">
+                  <span>Delivery</span>
+                  <span>{formatPrice(order.deliveryFee)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-heading text-sm font-extrabold text-text pt-2 border-t border-border mt-1">
                 <span>Total</span>
                 <span>{formatPrice(order.total)}</span>
@@ -357,15 +377,15 @@ export default function AdminOrderDetailPage({ params }: Props) {
             </div>
             <div className="px-5 py-4 space-y-2.5">
               <div className="flex justify-between">
-                <p className="font-body text-xs text-text-muted">Total</p>
+                <p className="font-body text-xs text-text-muted">Subtotal</p>
                 <p className="font-heading text-sm font-extrabold text-text">
-                  {formatPrice(order.total)}
+                  {formatPrice(order.subtotal)}
                 </p>
               </div>
               <div className="flex justify-between">
                 <p className="font-body text-xs text-text-muted">Upfront (50%)</p>
                 <p className="font-body text-xs font-semibold text-secondary">
-                  {formatPrice(Math.ceil(order.total / 2))}
+                  {formatPrice(Math.ceil(order.subtotal / 2))}
                 </p>
               </div>
               <div className="flex justify-between">
@@ -378,7 +398,7 @@ export default function AdminOrderDetailPage({ params }: Props) {
                 >
                   {order.paymentPhase === "fully_paid"
                     ? "Paid"
-                    : formatPrice(Math.floor(order.total / 2))}
+                    : formatPrice(Math.floor(order.subtotal / 2))}
                 </p>
               </div>
               <div className="border-t border-border pt-2.5 flex justify-between">
@@ -387,6 +407,16 @@ export default function AdminOrderDetailPage({ params }: Props) {
                   {order.paymentPhase.replace(/_/g, " ")}
                 </p>
               </div>
+              {order.paymentPhase === "upfront_paid" && order.status === "delivered" && (
+                <button
+                  onClick={handleMarkDeliveryPaid}
+                  disabled={updatePayment.isPending}
+                  className="w-full flex items-center justify-center gap-2 bg-secondary/10 border border-secondary/40 text-secondary px-4 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-secondary/20 transition-colors disabled:opacity-60 mt-1"
+                >
+                  {updatePayment.isPending && <Spinner size="sm" className="text-secondary" />}
+                  Mark Delivery Paid
+                </button>
+              )}
             </div>
           </div>
         </div>
