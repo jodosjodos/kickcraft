@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
+    container_name: kickcraft-postgres
     environment:
       POSTGRES_DB: kickcraft
       POSTGRES_USER: kickcraft
@@ -17,18 +18,20 @@ services:
 
   redis:
     image: redis:7-alpine
+    container_name: kickcraft-redis
     ports:
       - '6379:6379'
 
   minio:
     image: minio/minio:latest
+    container_name: kickcraft-minio
     command: server /data --console-address ':9001'
     environment:
       MINIO_ROOT_USER: kickcraft
       MINIO_ROOT_PASSWORD: kickcraft
     ports:
-      - '9000:9000'
-      - '9001:9001'
+      - '9200:9000'
+      - '9201:9001'
     volumes:
       - minio_data:/data
 
@@ -36,6 +39,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: kickcraft-backend
     env_file: .env
     ports:
       - '5006:3001'
