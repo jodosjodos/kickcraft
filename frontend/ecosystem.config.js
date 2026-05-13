@@ -2,6 +2,7 @@ module.exports = {
   apps: [
     {
       name: "kickcraft-frontend",
+      cwd: "/usr/kickcraft/frontend",
       script: "node_modules/.bin/next",
       args: "start -p 5005",
       env: {
