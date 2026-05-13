@@ -31,7 +31,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: frontend
-        run: pnpm install
+        run: pnpm install --ignore-scripts
 
       - name: Build
         working-directory: frontend
@@ -74,7 +74,7 @@ jobs:
 
             echo "${{ secrets.FRONTEND_ENV }}" | base64 -d > .env.local
 
-            pnpm install
+            pnpm install --ignore-scripts
 
             pnpm build
 
