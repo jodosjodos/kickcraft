@@ -77,6 +77,6 @@ jobs:
 
             pnpm build
 
-            pm2 reload kickcraft-frontend || pm2 start ecosystem.config.js
+            pm2 reload kickcraft-frontend || pm2 start "node_modules/.bin/next start -p 5005" --name kickcraft-frontend
 
             pm2 save
