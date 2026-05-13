@@ -37,8 +37,7 @@ jobs:
         working-directory: frontend
         run: pnpm build
         env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-          NEXT_PUBLIC_MINIO_PUBLIC_URL: ${{ secrets.NEXT_PUBLIC_MINIO_PUBLIC_URL }}
+          NEXT_PUBLIC_API_URL: http://placeholder
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
