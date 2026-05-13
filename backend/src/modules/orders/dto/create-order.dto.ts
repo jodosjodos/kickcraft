@@ -45,4 +45,8 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   deliveryAddress?: string;
+
+  @IsOptional()
+  @IsString()
+  discountCode?: string;
 }

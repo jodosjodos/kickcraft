@@ -29,12 +29,15 @@ export interface Order {
   items: OrderItem[];
   subtotal: number;
   deliveryFee: number;
+  discountAmount?: number;
+  discountId?: string | null;
   total: number;
   deliveryMethod: DeliveryMethod;
   deliveryAddress?: string | null;
   phone: string;
   email?: string | null;
   userId?: string | null;
+  agentId?: string | null;
   cancelReason?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -50,6 +53,7 @@ export interface CreateOrderRequest {
   phone: string;
   email?: string;
   deliveryAddress?: string;
+  discountCode?: string;
 }
 
 export interface LocalCartItem {

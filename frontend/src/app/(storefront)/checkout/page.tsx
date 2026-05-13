@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/providers/cart-provider";
 import { useCreateOrder } from "@/hooks/api/use-orders";
+import { useApplyDiscount } from "@/hooks/api/use-discounts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { DeliveryMethod } from "@/types/api/orders";
+import type { ApplyDiscountResponse } from "@/types/api/discounts";
 
 type Step = 1 | 2 | 3;
 
@@ -90,6 +92,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, total, clearCart } = useCart();
   const createOrder = useCreateOrder();
+  const applyDiscount = useApplyDiscount();
   const [step, setStep] = useState<Step>(1);
   const [form, setForm] = useState<CheckoutForm>({
     name: "",
@@ -100,11 +103,37 @@ export default function CheckoutPage() {
     sector: "",
   });
   const [orderError, setOrderError] = useState<string>("");
+  const [promoCode, setPromoCode] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<ApplyDiscountResponse | null>(null);
+  const [promoError, setPromoError] = useState("");
 
   const deliveryFee = form.deliveryMethod === "pickup" ? 0 : 2000;
-  const orderTotal = total + deliveryFee;
+  const discountAmount = appliedDiscount?.discountAmount ?? 0;
+  const orderTotal = total + deliveryFee - discountAmount;
   const upfront = Math.ceil(orderTotal / 2);
   const onDelivery = Math.floor(orderTotal / 2);
+
+  function handleApplyPromo() {
+    if (!promoCode.trim()) return;
+    setPromoError("");
+    applyDiscount.mutate(
+      { code: promoCode.trim(), orderTotal: total },
+      {
+        onSuccess: (result) => {
+          setAppliedDiscount(result);
+          setPromoCode("");
+        },
+        onError: (err) => {
+          setPromoError(err.message ?? "Invalid promo code");
+        },
+      },
+    );
+  }
+
+  function handleRemovePromo() {
+    setAppliedDiscount(null);
+    setPromoError("");
+  }
 
   if (items.length === 0) {
     return (
@@ -148,6 +177,7 @@ export default function CheckoutPage() {
           form.deliveryMethod === "delivery"
             ? `${form.district}, ${form.sector}`
             : undefined,
+        discountCode: appliedDiscount?.code,
       },
       {
         onSuccess: (order) => {
@@ -313,6 +343,48 @@ export default function CheckoutPage() {
                   />
                 </>
               )}
+
+              {/* Promo code */}
+              <div>
+                <p className="font-body text-xs font-semibold uppercase tracking-[0.1em] text-text-muted mb-1.5">
+                  Promo Code
+                </p>
+                {appliedDiscount ? (
+                  <div className="flex items-center justify-between border border-secondary/40 bg-secondary/5 px-3 py-2">
+                    <span className="font-body text-sm text-secondary font-semibold">
+                      {appliedDiscount.code} — you save {formatPrice(appliedDiscount.discountAmount)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleRemovePromo}
+                      className="font-body text-xs text-text-muted hover:text-error transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      placeholder="Enter code"
+                      className="flex-1 border border-border bg-surface px-3 py-2.5 font-mono text-sm text-text placeholder-text-muted/50 focus:outline-none focus:border-primary transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyPromo}
+                      disabled={applyDiscount.isPending || !promoCode.trim()}
+                      className="px-4 py-2.5 border border-border font-body text-xs font-semibold uppercase tracking-wider text-text-muted hover:text-text hover:border-outline transition-colors disabled:opacity-50"
+                    >
+                      {applyDiscount.isPending ? "..." : "Apply"}
+                    </button>
+                  </div>
+                )}
+                {promoError && (
+                  <p className="font-body text-xs text-error mt-1">{promoError}</p>
+                )}
+              </div>
 
               <Button type="submit" variant="primary" size="lg" className="w-full mt-2">
                 Continue to Payment
@@ -524,6 +596,12 @@ export default function CheckoutPage() {
                   {deliveryFee === 0 ? "Free" : formatPrice(deliveryFee)}
                 </span>
               </div>
+              {appliedDiscount && (
+                <div className="flex justify-between font-body text-xs text-secondary">
+                  <span>Promo ({appliedDiscount.code})</span>
+                  <span>−{formatPrice(appliedDiscount.discountAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-heading text-sm font-extrabold text-text pt-1">
                 <span>Total</span>
                 <span className="text-primary">{formatPrice(orderTotal)}</span>

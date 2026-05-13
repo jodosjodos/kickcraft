@@ -4,6 +4,7 @@ import { use, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAdminOrder, useUpdateOrderStatus, useUpdatePaymentPhase } from "@/hooks/api/use-orders";
+import { useDeliveryAgents, useAssignAgent } from "@/hooks/api/use-deliveries";
 import { OrderStatusBadge } from "@/components/ui/order-status-badge";
 import { Spinner } from "@/components/ui/spinner";
 import { formatPrice, formatDate } from "@/lib/utils";
@@ -38,7 +39,10 @@ export default function AdminOrderDetailPage({ params }: Props) {
   const { data: order, isLoading, isError, error } = useAdminOrder(id);
   const updateStatus = useUpdateOrderStatus();
   const updatePayment = useUpdatePaymentPhase();
+  const assignAgent = useAssignAgent();
+  const { data: agents = [] } = useDeliveryAgents();
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [showAgentAssign, setShowAgentAssign] = useState(false);
 
   if (isLoading) {
     return (
@@ -83,6 +87,15 @@ export default function AdminOrderDetailPage({ params }: Props) {
 
   const handleMarkDeliveryPaid = () => {
     updatePayment.mutate({ id: order.id, paymentPhase: "fully_paid" });
+  };
+
+  const currentAgent = agents.find((a) => a.id === order.agentId) ?? null;
+
+  const handleAssign = (agentId: string) => {
+    assignAgent.mutate(
+      { orderId: order.id, agentId },
+      { onSuccess: () => setShowAgentAssign(false) },
+    );
   };
 
   return (
@@ -367,6 +380,82 @@ export default function AdminOrderDetailPage({ params }: Props) {
               </a>
             </div>
           </div>
+
+          {/* Delivery Agent */}
+          {order.deliveryMethod === "delivery" && (
+            <div className="border border-border bg-surface">
+              <div className="px-5 py-3.5 border-b border-border">
+                <h2 className="font-heading text-sm font-extrabold uppercase tracking-tight text-text">
+                  Delivery Agent
+                </h2>
+              </div>
+              <div className="px-5 py-4">
+                {currentAgent ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 bg-secondary/20 flex items-center justify-center shrink-0 font-heading text-xs font-extrabold text-secondary">
+                        {currentAgent.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                      </div>
+                      <div>
+                        <p className="font-body text-sm font-semibold text-text">{currentAgent.name}</p>
+                        <p className="font-body text-xs text-text-muted">+{currentAgent.phone}</p>
+                      </div>
+                    </div>
+                    {!isTerminal && (
+                      <button
+                        onClick={() => setShowAgentAssign((v) => !v)}
+                        className="font-body text-xs text-text-muted hover:text-primary transition-colors underline underline-offset-2"
+                      >
+                        Change agent
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="font-body text-xs text-text-muted">No agent assigned</p>
+                    {!isTerminal && (
+                      <button
+                        onClick={() => setShowAgentAssign((v) => !v)}
+                        className="flex items-center gap-1.5 border border-border px-3 py-2 font-body text-xs font-semibold uppercase tracking-wider text-text-muted hover:text-text hover:border-outline transition-colors w-full justify-center"
+                      >
+                        <span className="material-symbols-outlined icon-outline text-[14px]">person_add</span>
+                        Assign Agent
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {showAgentAssign && (
+                  <div className="mt-3 space-y-1">
+                    <p className="font-body text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2">
+                      Select Agent
+                    </p>
+                    {agents.filter((a) => a.active).map((a) => (
+                      <button
+                        key={a.id}
+                        onClick={() => handleAssign(a.id)}
+                        disabled={assignAgent.isPending}
+                        className={cn(
+                          "flex items-center justify-between w-full px-3 py-2 border transition-colors disabled:opacity-50",
+                          a.id === order.agentId
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-outline hover:bg-surface-elevated",
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-secondary/20 flex items-center justify-center font-heading text-[10px] font-extrabold text-secondary">
+                            {a.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                          </div>
+                          <span className="font-body text-sm font-semibold text-text">{a.name}</span>
+                        </div>
+                        <span className="font-body text-xs text-text-muted">+{a.phone}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Payment */}
           <div className="border border-border bg-surface">

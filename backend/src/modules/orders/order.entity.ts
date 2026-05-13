@@ -1,9 +1,4 @@
-import {
-  Column,
-  Entity,
-  Index,
-  OneToMany,
-} from 'typeorm';
+import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity';
 import { OrderItem } from './order-item.entity';
 
@@ -38,7 +33,11 @@ export class Order extends BaseEntity {
   @Column({ type: 'enum', enum: PaymentPhase, default: PaymentPhase.Pending })
   paymentPhase!: PaymentPhase;
 
-  @Column({ type: 'enum', enum: DeliveryMethod, default: DeliveryMethod.Delivery })
+  @Column({
+    type: 'enum',
+    enum: DeliveryMethod,
+    default: DeliveryMethod.Delivery,
+  })
   deliveryMethod!: DeliveryMethod;
 
   @Column({ type: 'varchar', nullable: true, default: null })
@@ -65,6 +64,18 @@ export class Order extends BaseEntity {
   @Column({ type: 'varchar', nullable: true, default: null })
   cancelReason!: string | null;
 
-  @OneToMany(() => OrderItem, (item) => item.order, { cascade: true, eager: true })
+  @Column({ type: 'varchar', nullable: true, default: null })
+  agentId!: string | null;
+
+  @Column({ type: 'varchar', nullable: true, default: null })
+  discountId!: string | null;
+
+  @Column({ type: 'int', default: 0 })
+  discountAmount!: number;
+
+  @OneToMany(() => OrderItem, (item) => item.order, {
+    cascade: true,
+    eager: true,
+  })
   items!: OrderItem[];
 }

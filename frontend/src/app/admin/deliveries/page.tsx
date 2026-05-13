@@ -2,29 +2,31 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useMyOrders } from "@/hooks/api/use-orders";
+import { useAllOrders } from "@/hooks/api/use-orders";
+import { useDeliveryAgents, useCreateAgent, useAssignAgent } from "@/hooks/api/use-deliveries";
+import { useUpdateOrderStatus } from "@/hooks/api/use-orders";
+import { SlideOver } from "@/components/admin/slide-over";
 import { OrderStatusBadge } from "@/components/ui/order-status-badge";
 import { Spinner } from "@/components/ui/spinner";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { Order } from "@/types/api/orders";
-
-const MOCK_AGENTS = [
-  { id: "a1", name: "Eric Nshimiyimana", phone: "250788100001", active: true },
-  { id: "a2", name: "Patrick Habimana", phone: "250788100002", active: true },
-  { id: "a3", name: "Yvonne Mukamana", phone: "250788100003", active: false },
-];
+import type { DeliveryAgent } from "@/types/api/deliveries";
 
 type Tab = "queued" | "active";
 
-function AgentBadge({ agentId }: { agentId?: string }) {
-  const agent = agentId ? MOCK_AGENTS.find((a) => a.id === agentId) : null;
+function AgentBadge({ agentId, agents }: { agentId?: string | null; agents: DeliveryAgent[] }) {
+  const agent = agentId ? agents.find((a) => a.id === agentId) : null;
   if (!agent) return null;
   return (
     <div className="flex items-center gap-1.5">
       <div className="w-5 h-5 bg-secondary/20 flex items-center justify-center">
         <span className="font-heading text-[10px] font-extrabold text-secondary">
-          {agent.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+          {agent.name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .slice(0, 2)}
         </span>
       </div>
       <span className="font-body text-xs text-text-muted">{agent.name.split(" ")[0]}</span>
@@ -34,15 +36,25 @@ function AgentBadge({ agentId }: { agentId?: string }) {
 
 function DeliveryCard({
   order,
-  assigned,
-  onAssign,
+  agents,
 }: {
   order: Order;
-  assigned?: string;
-  onAssign: (orderId: string, agentId: string) => void;
+  agents: DeliveryAgent[];
 }) {
   const [showAssign, setShowAssign] = useState(false);
-  const agent = assigned ? MOCK_AGENTS.find((a) => a.id === assigned) : null;
+  const assignAgent = useAssignAgent();
+  const updateStatus = useUpdateOrderStatus();
+
+  function handleAssign(agentId: string) {
+    assignAgent.mutate(
+      { orderId: order.id, agentId },
+      { onSuccess: () => setShowAssign(false) },
+    );
+  }
+
+  function handleStatusUpdate(status: "out_for_delivery" | "delivered") {
+    updateStatus.mutate({ id: order.id, status });
+  }
 
   return (
     <div
@@ -50,7 +62,7 @@ function DeliveryCard({
         "border bg-surface transition-colors",
         order.status === "out_for_delivery"
           ? "border-l-4 border-l-[#ffb5a0] border-border"
-          : "border-border"
+          : "border-border",
       )}
     >
       {/* Card header */}
@@ -67,7 +79,9 @@ function DeliveryCard({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {agent && <AgentBadge agentId={assigned} />}
+          {order.agentId && (
+            <AgentBadge agentId={order.agentId} agents={agents} />
+          )}
           <OrderStatusBadge status={order.status} />
         </div>
       </div>
@@ -95,7 +109,7 @@ function DeliveryCard({
           <p className="font-body text-sm text-text">
             Collect on delivery:{" "}
             <span className="font-semibold text-primary">
-              {formatPrice(Math.floor(order.total / 2))}
+              {formatPrice(Math.ceil(order.total / 2))}
             </span>
           </p>
         </div>
@@ -104,7 +118,7 @@ function DeliveryCard({
             inventory_2
           </span>
           <p className="font-body text-sm text-text">
-            {order.items.length} {order.items.length === 1 ? "item" : "items"}
+            {order.items.reduce((s, i) => s + i.quantity, 0)} items
           </p>
         </div>
       </div>
@@ -116,26 +130,32 @@ function DeliveryCard({
             Assign Agent
           </p>
           <div className="space-y-1">
-            {MOCK_AGENTS.filter((a) => a.active).map((a) => (
-              <button
-                key={a.id}
-                onClick={() => {
-                  onAssign(order.id, a.id);
-                  setShowAssign(false);
-                }}
-                className="flex items-center justify-between w-full px-3 py-2 border border-border hover:border-outline hover:bg-surface-elevated transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-secondary/20 flex items-center justify-center">
-                    <span className="font-heading text-[10px] font-extrabold text-secondary">
-                      {a.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+            {agents
+              .filter((a) => a.active)
+              .map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => handleAssign(a.id)}
+                  disabled={assignAgent.isPending}
+                  className="flex items-center justify-between w-full px-3 py-2 border border-border hover:border-outline hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-secondary/20 flex items-center justify-center">
+                      <span className="font-heading text-[10px] font-extrabold text-secondary">
+                        {a.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </span>
+                    </div>
+                    <span className="font-body text-sm font-semibold text-text">
+                      {a.name}
                     </span>
                   </div>
-                  <span className="font-body text-sm font-semibold text-text">{a.name}</span>
-                </div>
-                <span className="font-body text-xs text-text-muted">+{a.phone}</span>
-              </button>
-            ))}
+                  <span className="font-body text-xs text-text-muted">+{a.phone}</span>
+                </button>
+              ))}
           </div>
         </div>
       )}
@@ -144,7 +164,7 @@ function DeliveryCard({
       <div className="px-5 py-3.5 border-t border-border flex flex-wrap gap-2">
         <a
           href={`https://wa.me/${order.phone}?text=${encodeURIComponent(
-            `Hi! Kickcraft here. Your order #${order.orderToken} is on its way!`
+            `Hi! Kickcraft here. Your order #${order.orderToken} is on its way!`,
           )}`}
           target="_blank"
           rel="noopener noreferrer"
@@ -154,25 +174,39 @@ function DeliveryCard({
           Notify
         </a>
 
-        {!agent && (
+        {!order.agentId && (
           <button
             onClick={() => setShowAssign((v) => !v)}
             className="flex items-center gap-1.5 border border-border px-3 py-1.5 font-body text-xs font-semibold uppercase tracking-wider text-text-muted hover:text-text hover:border-outline transition-colors"
           >
-            <span className="material-symbols-outlined icon-outline text-[14px]">person_add</span>
+            <span className="material-symbols-outlined icon-outline text-[14px]">
+              person_add
+            </span>
             Assign Agent
           </button>
         )}
 
         {order.status === "confirmed" && (
-          <button className="flex items-center gap-1.5 bg-primary text-white px-3 py-1.5 font-body text-xs font-semibold uppercase tracking-wider hover:bg-primary-inverse transition-colors ml-auto">
-            <span className="material-symbols-outlined icon-filled text-[14px]">local_shipping</span>
+          <button
+            onClick={() => handleStatusUpdate("out_for_delivery")}
+            disabled={updateStatus.isPending}
+            className="flex items-center gap-1.5 bg-primary text-white px-3 py-1.5 font-body text-xs font-semibold uppercase tracking-wider hover:bg-primary-inverse transition-colors ml-auto disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined icon-filled text-[14px]">
+              local_shipping
+            </span>
             Out for Delivery
           </button>
         )}
         {order.status === "out_for_delivery" && (
-          <button className="flex items-center gap-1.5 bg-secondary text-background px-3 py-1.5 font-body text-xs font-semibold uppercase tracking-wider hover:opacity-90 transition-opacity ml-auto">
-            <span className="material-symbols-outlined icon-filled text-[14px]">where_to_vote</span>
+          <button
+            onClick={() => handleStatusUpdate("delivered")}
+            disabled={updateStatus.isPending}
+            className="flex items-center gap-1.5 bg-secondary text-background px-3 py-1.5 font-body text-xs font-semibold uppercase tracking-wider hover:opacity-90 transition-opacity ml-auto disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined icon-filled text-[14px]">
+              where_to_vote
+            </span>
             Mark Delivered
           </button>
         )}
@@ -181,20 +215,40 @@ function DeliveryCard({
   );
 }
 
+interface AgentFormState { name: string; phone: string; email: string; }
+const EMPTY_AGENT_FORM: AgentFormState = { name: "", phone: "", email: "" };
+
 export default function AdminDeliveriesPage() {
   const [tab, setTab] = useState<Tab>("queued");
-  const [assignments, setAssignments] = useState<Record<string, string>>({});
-  const { data: orders, isLoading, isError } = useMyOrders();
+  const [agentSlideOpen, setAgentSlideOpen] = useState(false);
+  const [agentForm, setAgentForm] = useState<AgentFormState>(EMPTY_AGENT_FORM);
 
-  const deliveryOrders = (orders ?? []).filter((o) => o.deliveryMethod === "delivery");
+  const { data: ordersData, isLoading, isError } = useAllOrders();
+  const { data: agents = [] } = useDeliveryAgents();
+  const createAgent = useCreateAgent();
+
+  const allOrders: Order[] = ordersData?.data ?? [];
+  const deliveryOrders = allOrders.filter((o) => o.deliveryMethod === "delivery");
   const queued = deliveryOrders.filter((o) => o.status === "confirmed");
   const active = deliveryOrders.filter((o) => o.status === "out_for_delivery");
-
-  const handleAssign = (orderId: string, agentId: string) => {
-    setAssignments((prev) => ({ ...prev, [orderId]: agentId }));
-  };
-
   const displayed = tab === "queued" ? queued : active;
+
+  function handleSaveAgent() {
+    if (!agentForm.name.trim() || !agentForm.phone.trim()) return;
+    createAgent.mutate(
+      {
+        name: agentForm.name.trim(),
+        phone: agentForm.phone.trim(),
+        email: agentForm.email.trim() || undefined,
+      },
+      {
+        onSuccess: () => {
+          setAgentSlideOpen(false);
+          setAgentForm(EMPTY_AGENT_FORM);
+        },
+      },
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -211,46 +265,75 @@ export default function AdminDeliveriesPage() {
 
         <div className="hidden md:flex items-center gap-6">
           <div className="text-right">
-            <p className="font-heading text-lg font-extrabold text-primary">{queued.length}</p>
-            <p className="font-body text-[10px] uppercase tracking-wider text-text-muted">Queued</p>
+            <p className="font-heading text-lg font-extrabold text-primary">
+              {queued.length}
+            </p>
+            <p className="font-body text-[10px] uppercase tracking-wider text-text-muted">
+              Queued
+            </p>
           </div>
           <div className="w-px h-8 bg-border" />
           <div className="text-right">
-            <p className="font-heading text-lg font-extrabold text-[#ffb5a0]">{active.length}</p>
-            <p className="font-body text-[10px] uppercase tracking-wider text-text-muted">In Transit</p>
+            <p className="font-heading text-lg font-extrabold text-[#ffb5a0]">
+              {active.length}
+            </p>
+            <p className="font-body text-[10px] uppercase tracking-wider text-text-muted">
+              In Transit
+            </p>
           </div>
         </div>
       </div>
 
       {/* Agents row */}
       <div className="border border-border bg-surface p-4">
-        <p className="font-body text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-3">
-          Delivery Agents
-        </p>
-        <div className="flex flex-wrap gap-3">
-          {MOCK_AGENTS.map((agent) => (
-            <div key={agent.id} className="flex items-center gap-2.5 border border-border px-3 py-2">
-              <div
-                className={cn(
-                  "w-7 h-7 flex items-center justify-center font-heading text-xs font-extrabold",
-                  agent.active ? "bg-secondary/20 text-secondary" : "bg-surface-elevated text-text-muted"
-                )}
-              >
-                {agent.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-              </div>
-              <div>
-                <p className="font-body text-xs font-semibold text-text">{agent.name.split(" ")[0]}</p>
-                <p className="font-body text-[10px] text-text-muted">+{agent.phone}</p>
-              </div>
-              <span
-                className={cn(
-                  "ml-1 w-1.5 h-1.5 rounded-full",
-                  agent.active ? "bg-secondary" : "bg-surface-high"
-                )}
-              />
-            </div>
-          ))}
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-body text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">
+            Delivery Agents
+          </p>
+          <button
+            onClick={() => setAgentSlideOpen(true)}
+            className="flex items-center gap-1 px-2.5 py-1 border border-border font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted hover:text-text hover:border-outline transition-colors"
+          >
+            <span className="material-symbols-outlined icon-outline text-[12px]">add</span>
+            Add Agent
+          </button>
         </div>
+        {agents.length === 0 ? (
+          <p className="font-body text-xs text-text-muted">No agents yet</p>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {agents.map((agent) => (
+              <div key={agent.id} className="flex items-center gap-2.5 border border-border px-3 py-2">
+                <div
+                  className={cn(
+                    "w-7 h-7 flex items-center justify-center font-heading text-xs font-extrabold",
+                    agent.active
+                      ? "bg-secondary/20 text-secondary"
+                      : "bg-surface-elevated text-text-muted",
+                  )}
+                >
+                  {agent.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .slice(0, 2)}
+                </div>
+                <div>
+                  <p className="font-body text-xs font-semibold text-text">
+                    {agent.name.split(" ")[0]}
+                  </p>
+                  <p className="font-body text-[10px] text-text-muted">+{agent.phone}</p>
+                </div>
+                <span
+                  className={cn(
+                    "ml-1 w-1.5 h-1.5 rounded-full",
+                    agent.active ? "bg-secondary" : "bg-surface-high",
+                  )}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -265,7 +348,7 @@ export default function AdminDeliveriesPage() {
                 "flex items-center gap-2 px-3.5 py-1.5 font-body text-xs font-semibold uppercase tracking-wider border transition-all duration-150",
                 tab === t
                   ? "bg-primary text-white border-primary"
-                  : "bg-surface text-text-muted border-border hover:text-text hover:border-outline"
+                  : "bg-surface text-text-muted border-border hover:text-text hover:border-outline",
               )}
             >
               {t === "queued" ? "Queued" : "In Transit"}
@@ -273,7 +356,7 @@ export default function AdminDeliveriesPage() {
                 <span
                   className={cn(
                     "min-w-[18px] h-[18px] flex items-center justify-center font-body text-[10px] font-bold px-1",
-                    tab === t ? "bg-white/20 text-white" : "bg-primary text-white"
+                    tab === t ? "bg-white/20 text-white" : "bg-primary text-white",
                   )}
                 >
                   {count}
@@ -310,15 +393,73 @@ export default function AdminDeliveriesPage() {
       ) : (
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {displayed.map((order) => (
-            <DeliveryCard
-              key={order.id}
-              order={order}
-              assigned={assignments[order.id]}
-              onAssign={handleAssign}
-            />
+            <DeliveryCard key={order.id} order={order} agents={agents} />
           ))}
         </div>
       )}
+
+      {/* Add Agent SlideOver */}
+      <SlideOver
+        open={agentSlideOpen}
+        onClose={() => setAgentSlideOpen(false)}
+        title="Add Delivery Agent"
+        subtitle="Register a new delivery agent"
+        footer={
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => setAgentSlideOpen(false)}
+              className="px-4 py-2 border border-border font-body text-xs font-semibold text-text-muted hover:text-text hover:border-outline transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveAgent}
+              disabled={createAgent.isPending || !agentForm.name || !agentForm.phone}
+              className="bg-primary text-white px-4 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors disabled:opacity-50"
+            >
+              {createAgent.isPending ? "Saving..." : "Add Agent"}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-5">
+          <div>
+            <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">
+              Full Name
+            </label>
+            <input
+              value={agentForm.name}
+              onChange={(e) => setAgentForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder="e.g. Eric Nshimiyimana"
+              className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary transition-colors"
+            />
+          </div>
+          <div>
+            <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">
+              Phone Number
+            </label>
+            <input
+              value={agentForm.phone}
+              onChange={(e) => setAgentForm((f) => ({ ...f, phone: e.target.value }))}
+              placeholder="e.g. 250788100001"
+              className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary transition-colors"
+            />
+          </div>
+          <div>
+            <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">
+              Email{" "}
+              <span className="normal-case font-normal text-text-muted/60">(optional — for delivery notifications)</span>
+            </label>
+            <input
+              type="email"
+              value={agentForm.email}
+              onChange={(e) => setAgentForm((f) => ({ ...f, email: e.target.value }))}
+              placeholder="e.g. eric@example.com"
+              className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary transition-colors"
+            />
+          </div>
+        </div>
+      </SlideOver>
     </div>
   );
 }

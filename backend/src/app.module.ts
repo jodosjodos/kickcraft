@@ -7,6 +7,10 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
+import { DeliveryAgentsModule } from './modules/delivery-agents/delivery-agents.module';
+import { DiscountsModule } from './modules/discounts/discounts.module';
+import { MailModule } from './modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -25,10 +29,14 @@ import { OrdersModule } from './modules/orders/orders.module';
         logging: config.get<string>('NODE_ENV') === 'development',
       }),
     }),
+    MailModule,
     UsersModule,
     AuthModule,
     ProductsModule,
     OrdersModule,
+    ReviewsModule,
+    DeliveryAgentsModule,
+    DiscountsModule,
   ],
 })
 export class AppModule {}

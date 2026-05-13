@@ -226,6 +226,14 @@ export function OrderConfirmedContent() {
           </a>
 
           <Link
+            href={`/track?token=${orderNumber}`}
+            className="w-full flex items-center justify-center gap-2 border border-primary/40 text-primary py-4 font-body text-sm font-bold uppercase tracking-wider hover:border-primary hover:bg-primary/5 active:scale-[0.99] transition-all"
+          >
+            <span className="material-symbols-outlined icon-outline text-[18px]">track_changes</span>
+            Track Your Order
+          </Link>
+
+          <Link
             href="/shop"
             className="w-full flex items-center justify-center gap-2 border border-border text-text py-4 font-body text-sm font-bold uppercase tracking-wider hover:border-outline hover:text-text active:scale-[0.99] transition-all"
           >

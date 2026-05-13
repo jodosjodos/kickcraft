@@ -5,13 +5,21 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { Order, DeliveryMethod, OrderStatus, PaymentPhase } from './order.entity';
+import {
+  Order,
+  DeliveryMethod,
+  OrderStatus,
+  PaymentPhase,
+} from './order.entity';
 import { OrderItem } from './order-item.entity';
 import { Product } from '../products/product.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderQueryDto } from './dto/order-query.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { UpdatePaymentPhaseDto } from './dto/update-payment-phase.dto';
+import { DiscountsService } from '../discounts/discounts.service';
+import { DeliveryAgent } from '../delivery-agents/delivery-agent.entity';
+import { MailService } from '../mail/mail.service';
 
 const DELIVERY_FEE = 2000;
 
@@ -36,7 +44,11 @@ export class OrdersService {
     private readonly itemRepo: Repository<OrderItem>,
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
+    @InjectRepository(DeliveryAgent)
+    private readonly agentRepo: Repository<DeliveryAgent>,
     private readonly dataSource: DataSource,
+    private readonly discountsService: DiscountsService,
+    private readonly mailService: MailService,
   ) {}
 
   async create(dto: CreateOrderDto, userId?: string): Promise<Order> {
@@ -76,7 +88,7 @@ export class OrdersService {
           productName: product.name,
           productBrand: product.brand,
           price: product.price,
-          imageUrl: (product.images[0]?.url) ?? null,
+          imageUrl: product.images[0]?.url ?? null,
           size: input.size,
           quantity: input.quantity,
         });
@@ -84,7 +96,20 @@ export class OrdersService {
 
       const deliveryFee =
         dto.deliveryMethod === DeliveryMethod.Delivery ? DELIVERY_FEE : 0;
-      const total = subtotal + deliveryFee;
+
+      let discountAmount = 0;
+      let discountId: string | null = null;
+
+      if (dto.discountCode) {
+        const discount = await this.discountsService.applyDiscount({
+          code: dto.discountCode,
+          orderTotal: subtotal,
+        });
+        discountAmount = discount.discountAmount;
+        discountId = discount.discountId;
+      }
+
+      const total = subtotal + deliveryFee - discountAmount;
 
       let token = generateToken();
       // Retry until unique (collision extremely unlikely)
@@ -103,8 +128,11 @@ export class OrdersService {
         userId: userId ?? null,
         subtotal,
         deliveryFee,
+        discountAmount,
+        discountId,
         total,
         cancelReason: null,
+        agentId: null,
       });
 
       const savedOrder = await manager.save(Order, order);
@@ -113,6 +141,10 @@ export class OrdersService {
         manager.create(OrderItem, { ...snap, order: savedOrder }),
       );
       await manager.save(OrderItem, items);
+
+      if (discountId) {
+        await this.discountsService.incrementUsage(discountId);
+      }
 
       return manager.findOneOrFail(Order, { where: { id: savedOrder.id } });
     });
@@ -192,7 +224,27 @@ export class OrdersService {
     if (dto.status === OrderStatus.Cancelled && dto.cancelReason) {
       order.cancelReason = dto.cancelReason;
     }
-    return this.orderRepo.save(order);
+    const savedOrder = await this.orderRepo.save(order);
+
+    if (dto.status === OrderStatus.OutForDelivery && savedOrder.agentId) {
+      const agent = await this.agentRepo.findOne({
+        where: { id: savedOrder.agentId },
+      });
+      if (agent) {
+        if (savedOrder.email) {
+          void this.mailService
+            .sendOrderOutForDelivery(savedOrder, agent.name, agent.phone)
+            .catch(() => {});
+        }
+        if (agent.email) {
+          void this.mailService
+            .sendAgentAssignment(agent.email, savedOrder)
+            .catch(() => {});
+        }
+      }
+    }
+
+    return savedOrder;
   }
 
   async updatePaymentPhase(
@@ -201,6 +253,12 @@ export class OrdersService {
   ): Promise<Order> {
     const order = await this.findOne(id);
     order.paymentPhase = dto.paymentPhase;
+    return this.orderRepo.save(order);
+  }
+
+  async assignAgent(id: string, agentId: string): Promise<Order> {
+    const order = await this.findOne(id);
+    order.agentId = agentId;
     return this.orderRepo.save(order);
   }
 }

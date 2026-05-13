@@ -1,5 +1,6 @@
 import type { ProductFilters } from "@/types/api/products";
 import type { OrderFilters } from "@/types/api/orders";
+import type { ReviewStatus } from "@/types/api/reviews";
 
 export const queryKeys = {
   auth: {
@@ -26,5 +27,17 @@ export const queryKeys = {
     all: ["users"] as const,
     list: () => ["users", "list"] as const,
     detail: (id: string) => ["users", "detail", id] as const,
+  },
+  reviews: {
+    all: ["reviews"] as const,
+    byProduct: (productId: string) =>
+      ["reviews", "product", productId] as const,
+    admin: (status?: ReviewStatus) => ["reviews", "admin", status] as const,
+  },
+  agents: {
+    all: ["agents"] as const,
+  },
+  discounts: {
+    all: ["discounts"] as const,
   },
 };

@@ -3,6 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useProduct, useSimilarProducts } from "@/hooks/api/use-products";
+import { useProductReviews, useCreateReview } from "@/hooks/api/use-reviews";
+import { useMyOrders } from "@/hooks/api/use-orders";
+import { useAuth } from "@/providers/auth-provider";
 import { useCart } from "@/providers/cart-provider";
 import { useWishlist } from "@/providers/wishlist-provider";
 import { ImageGallery } from "./image-gallery";
@@ -62,18 +65,36 @@ interface ProductDetailProps {
   slug: string;
 }
 
+interface ReviewFormState {
+  rating: number;
+  title: string;
+  body: string;
+  name: string;
+  email: string;
+}
+
+const EMPTY_REVIEW_FORM: ReviewFormState = { rating: 0, title: "", body: "", name: "", email: "" };
+
 export function ProductDetail({ slug }: ProductDetailProps) {
   const { data: product, isLoading, isError, error } = useProduct(slug);
   const { addItem } = useCart();
   const { isWishlisted, toggle } = useWishlist();
+  const { user } = useAuth();
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<TabKey>("description");
   const [addedToCart, setAddedToCart] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewForm, setReviewForm] = useState<ReviewFormState>(EMPTY_REVIEW_FORM);
+  const [reviewHoverRating, setReviewHoverRating] = useState(0);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   const subCategory = product?.subCategory ?? "sneakers";
   const productId = product?.id ?? "";
   const { data: similarProducts } = useSimilarProducts(productId, subCategory);
+  const { data: reviews = [] } = useProductReviews(productId);
+  const { data: myOrders = [] } = useMyOrders();
+  const createReview = useCreateReview();
 
   if (isLoading) {
     return (
@@ -124,6 +145,41 @@ export function ProductDetail({ slug }: ProductDetailProps) {
   function handleWishlistToggle() {
     if (!product) return;
     toggle(product);
+  }
+
+  function handleOpenReviewForm() {
+    setReviewForm({
+      rating: 0,
+      title: "",
+      body: "",
+      name: user?.name ?? "",
+      email: user?.email ?? "",
+    });
+    setReviewSubmitted(false);
+    setShowReviewForm(true);
+  }
+
+  function handleSubmitReview() {
+    if (!product || reviewForm.rating === 0 || !reviewForm.title.trim() || !reviewForm.body.trim() || !reviewForm.name.trim()) return;
+    const linkedOrder = myOrders.find((o) => o.items.some((i) => i.productId === product.id));
+    createReview.mutate(
+      {
+        productId: product.id,
+        rating: reviewForm.rating,
+        title: reviewForm.title.trim(),
+        body: reviewForm.body.trim(),
+        customerName: reviewForm.name.trim(),
+        customerEmail: reviewForm.email.trim() || undefined,
+        orderId: linkedOrder?.id,
+      },
+      {
+        onSuccess: () => {
+          setReviewSubmitted(true);
+          setShowReviewForm(false);
+          setReviewForm(EMPTY_REVIEW_FORM);
+        },
+      },
+    );
   }
 
   const whatsappMsg = encodeURIComponent(
@@ -443,7 +499,7 @@ export function ProductDetail({ slug }: ProductDetailProps) {
           )}
           {activeTab === "reviews" && (
             <div>
-              {product.rating !== undefined ? (
+              {product.rating !== undefined && (
                 <div className="flex items-center gap-4 mb-6">
                   <div className="text-center">
                     <p className="font-heading text-4xl font-extrabold text-text">
@@ -455,11 +511,189 @@ export function ProductDetail({ slug }: ProductDetailProps) {
                     </p>
                   </div>
                 </div>
-              ) : null}
-              <p className="font-body text-sm text-text-muted">
-                No written reviews yet. Be the first to buy and share your
-                experience.
-              </p>
+              )}
+              {reviews.length === 0 ? (
+                <p className="font-body text-sm text-text-muted">
+                  No written reviews yet. Be the first to buy and share your experience.
+                </p>
+              ) : (
+                <div className="space-y-5">
+                  {reviews.map((review) => (
+                    <div key={review.id} className="border-b border-border pb-5">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 flex items-center justify-center shrink-0 font-heading text-xs font-extrabold bg-primary/20 text-primary">
+                          {review.customerName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-body text-sm font-semibold text-text">
+                                {review.customerName}
+                              </p>
+                              {review.verified && (
+                                <span className="flex items-center gap-0.5 font-body text-[10px] font-bold uppercase text-secondary">
+                                  <span className="material-symbols-outlined icon-filled text-[11px]">verified</span>
+                                  Verified
+                                </span>
+                              )}
+                            </div>
+                            <StarRating rating={review.rating} />
+                          </div>
+                          <p className="font-body text-sm font-bold text-text mb-1">{review.title}</p>
+                          <p className="font-body text-sm text-text-muted leading-relaxed">{review.body}</p>
+                          <p className="font-body text-[10px] text-text-muted mt-2">
+                            {new Date(review.createdAt).toLocaleDateString("en-RW", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Write review section */}
+              <div className="mt-8 pt-6 border-t border-border">
+                {reviewSubmitted ? (
+                  <div className="flex items-center gap-3 px-4 py-3 bg-secondary/10 border border-secondary/30">
+                    <span className="material-symbols-outlined icon-filled text-[18px] text-secondary">check_circle</span>
+                    <p className="font-body text-sm text-secondary font-semibold">
+                      Thank you! Your review is pending approval and will appear shortly.
+                    </p>
+                  </div>
+                ) : !showReviewForm ? (
+                  <button
+                    onClick={handleOpenReviewForm}
+                    className="flex items-center gap-2 border border-border px-4 py-2.5 font-body text-sm font-semibold uppercase tracking-wider text-text-muted hover:text-text hover:border-outline transition-colors"
+                  >
+                    <span className="material-symbols-outlined icon-outline text-[16px]">rate_review</span>
+                    Write a Review
+                  </button>
+                ) : (
+                  <div className="border border-border bg-surface p-5 space-y-4">
+                    <p className="font-heading text-sm font-extrabold uppercase tracking-tight text-text">
+                      Write a Review
+                    </p>
+
+                    {/* Star picker */}
+                    <div>
+                      <p className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted mb-2">
+                        Rating <span className="text-error">*</span>
+                      </p>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onMouseEnter={() => setReviewHoverRating(star)}
+                            onMouseLeave={() => setReviewHoverRating(0)}
+                            onClick={() => setReviewForm((f) => ({ ...f, rating: star }))}
+                            className="text-[28px] leading-none transition-colors"
+                          >
+                            <span
+                              className={cn(
+                                "material-symbols-outlined text-[28px] leading-none",
+                                (reviewHoverRating || reviewForm.rating) >= star
+                                  ? "icon-fill text-amber-400"
+                                  : "icon-outline text-text-muted/30",
+                              )}
+                            >
+                              star
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <div>
+                      <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">
+                        Review Title <span className="text-error">*</span>
+                      </label>
+                      <input
+                        value={reviewForm.title}
+                        onChange={(e) => setReviewForm((f) => ({ ...f, title: e.target.value }))}
+                        placeholder="Summarize your experience"
+                        className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+
+                    {/* Body */}
+                    <div>
+                      <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">
+                        Your Review <span className="text-error">*</span>
+                      </label>
+                      <textarea
+                        value={reviewForm.body}
+                        onChange={(e) => setReviewForm((f) => ({ ...f, body: e.target.value }))}
+                        placeholder="What did you think? How was the fit, quality, delivery?"
+                        rows={4}
+                        className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary transition-colors resize-none"
+                      />
+                    </div>
+
+                    {/* Name */}
+                    <div>
+                      <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">
+                        Your Name <span className="text-error">*</span>
+                      </label>
+                      <input
+                        value={reviewForm.name}
+                        onChange={(e) => setReviewForm((f) => ({ ...f, name: e.target.value }))}
+                        disabled={!!user}
+                        placeholder="Your name"
+                        className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      />
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">
+                        Email{" "}
+                        <span className="normal-case font-normal text-text-muted/60">(optional)</span>
+                      </label>
+                      <input
+                        type="email"
+                        value={reviewForm.email}
+                        onChange={(e) => setReviewForm((f) => ({ ...f, email: e.target.value }))}
+                        disabled={!!user}
+                        placeholder="your@email.com"
+                        className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      />
+                    </div>
+
+                    {createReview.isError && (
+                      <p className="font-body text-xs text-error">Something went wrong. Please try again.</p>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={handleSubmitReview}
+                        disabled={
+                          createReview.isPending ||
+                          reviewForm.rating === 0 ||
+                          !reviewForm.title.trim() ||
+                          !reviewForm.body.trim() ||
+                          !reviewForm.name.trim()
+                        }
+                        className="bg-primary text-white px-4 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors disabled:opacity-50"
+                      >
+                        {createReview.isPending ? "Submitting..." : "Submit Review"}
+                      </button>
+                      <button
+                        onClick={() => setShowReviewForm(false)}
+                        className="px-4 py-2 border border-border font-body text-xs font-semibold text-text-muted hover:text-text hover:border-outline transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

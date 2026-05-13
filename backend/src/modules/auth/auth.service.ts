@@ -11,7 +11,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { UsersService } from '../users/users.service';
-import { MailService } from './mail.service';
+import { MailService } from '../mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { LoginDto } from './dto/login.dto';
@@ -38,7 +38,8 @@ export class AuthService {
     if (existingEmail) throw new ConflictException('Email already in use');
 
     const existingPhone = await this.usersService.findByPhone(dto.phone);
-    if (existingPhone) throw new ConflictException('Phone number already in use');
+    if (existingPhone)
+      throw new ConflictException('Phone number already in use');
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const verificationToken = randomUUID();
@@ -63,7 +64,8 @@ export class AuthService {
     });
 
     if (!user) throw new BadRequestException('Invalid or expired token');
-    if (user.isVerified) throw new BadRequestException('Email already verified');
+    if (user.isVerified)
+      throw new BadRequestException('Email already verified');
 
     user.isVerified = true;
     user.verificationToken = null;
@@ -167,7 +169,8 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('User not found');
 
     const match = await bcrypt.compare(dto.currentPassword, user.passwordHash);
-    if (!match) throw new UnauthorizedException('Current password is incorrect');
+    if (!match)
+      throw new UnauthorizedException('Current password is incorrect');
 
     const pendingPasswordHash = await bcrypt.hash(dto.newPassword, 12);
     const passwordChangeToken = randomUUID();
@@ -216,7 +219,10 @@ export class AuthService {
     user.passwordChangeTokenExpiresAt = null;
     await this.userRepo.save(user);
 
-    void this.mailService.sendPasswordChangedNotification(user.email, user.name);
+    void this.mailService.sendPasswordChangedNotification(
+      user.email,
+      user.name,
+    );
 
     return { message: 'Password updated successfully' };
   }

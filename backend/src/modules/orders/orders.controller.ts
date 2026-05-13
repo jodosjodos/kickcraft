@@ -84,7 +84,17 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch(':id/payment')
-  updatePaymentPhase(@Param('id') id: string, @Body() dto: UpdatePaymentPhaseDto) {
+  updatePaymentPhase(
+    @Param('id') id: string,
+    @Body() dto: UpdatePaymentPhaseDto,
+  ) {
     return this.ordersService.updatePaymentPhase(id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Patch(':id/agent')
+  assignAgent(@Param('id') id: string, @Body('agentId') agentId: string) {
+    return this.ordersService.assignAgent(id, agentId);
   }
 }
