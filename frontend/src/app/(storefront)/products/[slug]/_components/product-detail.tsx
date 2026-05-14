@@ -364,13 +364,13 @@ export function ProductDetail({ slug }: ProductDetailProps) {
               onClick={handleAddToCart}
             >
               {addedToCart ? (
-                "Added to Cart!"
+                "Added to Bag!"
               ) : (
                 <>
                   <span className="material-symbols-outlined icon-outline text-[18px] mr-2">
-                    shopping_cart
+                    shopping_bag
                   </span>
-                  {isSoldOut ? "Sold Out" : "Add to Cart"}
+                  {isSoldOut ? "Sold Out" : "Add to Bag"}
                 </>
               )}
             </Button>

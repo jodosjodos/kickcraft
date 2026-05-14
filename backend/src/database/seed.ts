@@ -51,7 +51,7 @@ const products: SeedProduct[] = [
     brand: 'Nike',
     description:
       "The radiance lives on in the Nike Air Force 1 '07. The b-ball icon that put air in sneaker culture keeps its legendary shape while the classic colorway stays fresh for any outfit, any day.",
-    price: 85000,
+    price: 68000,
     originalPrice: null,
     category: ProductCategory.Men,
     subCategory: ProductSubCategory.Sneakers,
@@ -80,8 +80,8 @@ const products: SeedProduct[] = [
     brand: 'Adidas',
     description:
       "Energy returns with every step. The Ultraboost 23 delivers a responsive BOOST midsole and a snug Primeknit upper that adapts to your foot — built for runners who don't stop.",
-    price: 120000,
-    originalPrice: 148000,
+    price: 96000,
+    originalPrice: 118000,
     category: ProductCategory.Men,
     subCategory: ProductSubCategory.Sneakers,
     stock: 15,
@@ -109,7 +109,7 @@ const products: SeedProduct[] = [
     brand: 'Jordan',
     description:
       'The shoe that started it all. The Jordan 1 Retro High OG Chicago brings back the iconic red, white, and black colorway that launched a cultural revolution. Every pair is a piece of history.',
-    price: 175000,
+    price: 140000,
     originalPrice: null,
     category: ProductCategory.Men,
     subCategory: ProductSubCategory.Sneakers,
@@ -138,8 +138,8 @@ const products: SeedProduct[] = [
     brand: 'New Balance',
     description:
       'A street-style icon with decades of heritage. The New Balance 574 combines an ENCAP midsole for all-day support with a versatile silhouette that works from campus to weekend hangs.',
-    price: 72000,
-    originalPrice: 88000,
+    price: 58000,
+    originalPrice: 70000,
     category: ProductCategory.Men,
     subCategory: ProductSubCategory.Sneakers,
     stock: 32,
@@ -167,7 +167,7 @@ const products: SeedProduct[] = [
     brand: 'Puma',
     description:
       "Inspired by late '80s running shoes, the RS-X3 Cube takes the chunky-sole trend to the next level. Bold colour-blocking and the RS cushioning system make it the statement piece your rotation needs.",
-    price: 65000,
+    price: 52000,
     originalPrice: null,
     category: ProductCategory.Men,
     subCategory: ProductSubCategory.Sneakers,
@@ -196,8 +196,8 @@ const products: SeedProduct[] = [
     brand: 'Yeezy',
     description:
       'The Yeezy 350 V2 Zebra is one of the most sought-after sneakers ever made. Its full-length BOOST midsole, Primeknit upper, and distinctive stripe design have made it a grail for collectors worldwide.',
-    price: 220000,
-    originalPrice: 260000,
+    price: 176000,
+    originalPrice: 208000,
     category: ProductCategory.Men,
     subCategory: ProductSubCategory.Sneakers,
     stock: 5,
@@ -227,7 +227,7 @@ const products: SeedProduct[] = [
     brand: 'Nike',
     description:
       'Built for cool-weather traction and all-day wear. The Nike Manoa Leather Boot pairs a durable leather upper with a padded collar and a grippy rubber outsole — ready for whatever the city throws at you.',
-    price: 95000,
+    price: 76000,
     originalPrice: null,
     category: ProductCategory.Men,
     subCategory: ProductSubCategory.Boots,
@@ -256,8 +256,8 @@ const products: SeedProduct[] = [
     brand: 'Adidas',
     description:
       'Cold-weather performance in a sleek silhouette. The Terrex Snowpitch Boot features a waterproof upper, CLIMAWARM insulation, and Traxion outsole lugs for grip on slick terrain.',
-    price: 115000,
-    originalPrice: 135000,
+    price: 92000,
+    originalPrice: 108000,
     category: ProductCategory.Men,
     subCategory: ProductSubCategory.Boots,
     stock: 10,
@@ -287,7 +287,7 @@ const products: SeedProduct[] = [
     brand: 'Adidas',
     description:
       "Where street meets smart. The Adidas Loafer Classic gives you the ease of slip-on comfort with a refined leather upper that's clean enough to dress up and relaxed enough to keep it casual.",
-    price: 60000,
+    price: 48000,
     originalPrice: null,
     category: ProductCategory.Men,
     subCategory: ProductSubCategory.Loafers,
@@ -313,8 +313,8 @@ const products: SeedProduct[] = [
     brand: 'Adidas',
     description:
       'Post-game recovery essential. The Adilette Comfort Slides feature a cloudfoam plus footbed and a quick-drying upper so you can kick back in serious style whether at the pool or on the move.',
-    price: 28000,
-    originalPrice: 35000,
+    price: 22000,
+    originalPrice: 28000,
     category: ProductCategory.Men,
     subCategory: ProductSubCategory.Slides,
     stock: 42,
@@ -339,8 +339,8 @@ const products: SeedProduct[] = [
     brand: 'Nike',
     description:
       "Nike's biggest heel Air unit ever delivers a super-soft ride from heel to toe. The Air Max 270 in a fresh women's colourway keeps your look light, bold, and unmistakably Nike.",
-    price: 92000,
-    originalPrice: 110000,
+    price: 74000,
+    originalPrice: 88000,
     category: ProductCategory.Women,
     subCategory: ProductSubCategory.Sneakers,
     stock: 21,
@@ -368,7 +368,7 @@ const products: SeedProduct[] = [
     brand: 'Adidas',
     description:
       'The Gazelle steps into the platform era. The Gazelle Bold keeps the iconic suede upper and three-stripes branding that defined a generation while adding a raised platform sole for extra presence.',
-    price: 78000,
+    price: 62000,
     originalPrice: null,
     category: ProductCategory.Women,
     subCategory: ProductSubCategory.Sneakers,
@@ -397,8 +397,8 @@ const products: SeedProduct[] = [
     brand: 'Vans',
     description:
       "The Old Skool gets elevated — literally. The Platform version of Vans' most iconic silhouette adds a 1.5-inch stack without losing any of the canvas-and-suede character that made it famous.",
-    price: 55000,
-    originalPrice: 65000,
+    price: 44000,
+    originalPrice: 52000,
     category: ProductCategory.Women,
     subCategory: ProductSubCategory.Sneakers,
     stock: 28,
@@ -426,7 +426,7 @@ const products: SeedProduct[] = [
     brand: 'Converse',
     description:
       'More than 100 years and still the most iconic shoe on earth. The Chuck Taylor All Star Hi wraps classic canvas construction around an OrthoLite insole for the most comfortable Chuck yet.',
-    price: 45000,
+    price: 36000,
     originalPrice: null,
     category: ProductCategory.Women,
     subCategory: ProductSubCategory.Sneakers,
@@ -457,8 +457,8 @@ const products: SeedProduct[] = [
     brand: 'Converse',
     description:
       'The Chuck 70 heritage meets fall-ready boot silhouette. Higher ankle coverage, a thicker rubber cupsole, and premium canvas construction make this the seasonal Chuck upgrade your wardrobe needs.',
-    price: 68000,
-    originalPrice: 80000,
+    price: 54000,
+    originalPrice: 64000,
     category: ProductCategory.Women,
     subCategory: ProductSubCategory.Boots,
     stock: 12,
@@ -483,7 +483,7 @@ const products: SeedProduct[] = [
     brand: 'Nike',
     description:
       'Soft, light, and ready for any day. The Nike Victori One Slides feature a foam sole for lightweight cushioning and a textured strap for a secure fit — perfect from the gym to the street.',
-    price: 22000,
+    price: 18000,
     originalPrice: null,
     category: ProductCategory.Women,
     subCategory: ProductSubCategory.Slides,
@@ -509,8 +509,8 @@ const products: SeedProduct[] = [
     brand: 'Nike',
     description:
       "The biggest Air unit meets React foam in a kids' size range. Bold looks, responsive cushioning, and a secure lacing system mean kids can run, jump, and explore all day long.",
-    price: 52000,
-    originalPrice: 63000,
+    price: 42000,
+    originalPrice: 50000,
     category: ProductCategory.Kids,
     subCategory: ProductSubCategory.Sneakers,
     stock: 22,
@@ -538,7 +538,7 @@ const products: SeedProduct[] = [
     brand: 'Adidas',
     description:
       'The shell toe legend, scaled for the next generation. The Adidas Superstar Kids delivers the same iconic look and durable rubber cupsole in sizes built for growing feet.',
-    price: 38000,
+    price: 30000,
     originalPrice: null,
     category: ProductCategory.Kids,
     subCategory: ProductSubCategory.Sneakers,
@@ -567,7 +567,7 @@ const products: SeedProduct[] = [
     brand: 'Puma',
     description:
       'Fast looks for fast kids. The Puma Future Rider draws on archival running DNA to deliver a lightweight, colourful sneaker that kids will actually want to wear every single day.',
-    price: 32000,
+    price: 26000,
     originalPrice: null,
     category: ProductCategory.Kids,
     subCategory: ProductSubCategory.Sneakers,
@@ -591,8 +591,8 @@ const products: SeedProduct[] = [
     brand: 'Nike',
     description:
       'Designed to help keep you running. The React Infinity Run Flyknit 3 features a wider, rocker-shaped sole and React foam to deliver a smooth, stable ride from your first step to your last.',
-    price: 98000,
-    originalPrice: 118000,
+    price: 78000,
+    originalPrice: 94000,
     category: ProductCategory.Men,
     subCategory: ProductSubCategory.Sneakers,
     stock: 0,
@@ -613,6 +613,95 @@ const products: SeedProduct[] = [
     sizes: ['40', '41', '42', '43', '44', '45'],
     rating: 4.7,
     reviewCount: 102,
+  },
+
+  // ── SPORTS · SNEAKERS ───────────────────────────────────────────────────────
+  {
+    slug: 'nike-pegasus-40',
+    name: 'Pegasus 40',
+    brand: 'Nike',
+    description:
+      'The everyday trainer that never lets you down. The Pegasus 40 features a full-length React foam midsole and a secure Flyknit upper, delivering the cushioning and responsiveness serious runners demand.',
+    price: 74000,
+    originalPrice: null,
+    category: ProductCategory.Sports,
+    subCategory: ProductSubCategory.Sneakers,
+    stock: 20,
+    status: ProductStatus.Active,
+    isNew: true,
+    images: [
+      {
+        url: 'https://images.unsplash.com/photo-1542291026-5ef1e8cb3ca8?w=800&q=80',
+        alt: 'Nike Pegasus 40 side view',
+        order: 0,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=800&q=80',
+        alt: 'Nike Pegasus 40 sole',
+        order: 1,
+      },
+    ],
+    sizes: ['39', '40', '41', '42', '43', '44', '45'],
+    rating: 4.7,
+    reviewCount: 88,
+  },
+  {
+    slug: 'adidas-runfalcon-3',
+    name: 'Runfalcon 3.0',
+    brand: 'Adidas',
+    description:
+      'Built for daily training runs and weekend miles. The Runfalcon 3.0 delivers a breathable mesh upper and a lightweight EVA midsole in an accessible package that punches above its price.',
+    price: 38000,
+    originalPrice: 46000,
+    category: ProductCategory.Sports,
+    subCategory: ProductSubCategory.Sneakers,
+    stock: 35,
+    status: ProductStatus.Active,
+    isNew: false,
+    images: [
+      {
+        url: 'https://images.unsplash.com/photo-1539185441755-769473a23570?w=800&q=80',
+        alt: 'Adidas Runfalcon side view',
+        order: 0,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1520316587275-6dc81a9f1c74?w=800&q=80',
+        alt: 'Adidas Runfalcon top view',
+        order: 1,
+      },
+    ],
+    sizes: ['39', '40', '41', '42', '43', '44', '45', '46'],
+    rating: 4.4,
+    reviewCount: 63,
+  },
+  {
+    slug: 'puma-velocity-nitro-2',
+    name: 'Velocity Nitro 2',
+    brand: 'Puma',
+    description:
+      "Speed-focused cushioning for serious athletes. The Velocity Nitro 2 uses NITRO foam technology to deliver an explosive yet stable platform, whether you're chasing a PB or crushing interval sessions.",
+    price: 58000,
+    originalPrice: null,
+    category: ProductCategory.Sports,
+    subCategory: ProductSubCategory.Sneakers,
+    stock: 16,
+    status: ProductStatus.Active,
+    isNew: true,
+    images: [
+      {
+        url: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&q=80',
+        alt: 'Puma Velocity Nitro 2 side view',
+        order: 0,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=800&q=80',
+        alt: 'Puma Velocity Nitro 2 detail',
+        order: 1,
+      },
+    ],
+    sizes: ['39', '40', '41', '42', '43', '44', '45'],
+    rating: 4.6,
+    reviewCount: 47,
   },
 ];
 

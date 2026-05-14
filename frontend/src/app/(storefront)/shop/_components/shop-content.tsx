@@ -66,9 +66,9 @@ function EditorsPick({ product }: { product: Product }) {
           {formatPrice(product.price)}
         </p>
         <span className="inline-flex items-center justify-center gap-2 self-start bg-primary text-white font-body font-semibold text-sm uppercase tracking-wider px-6 py-3 rounded hover:bg-primary-inverse active:scale-95 transition-all duration-200 mt-2">
-          Add to Cart
+          Add to Bag
           <span className="material-symbols-outlined icon-outline text-[16px]">
-            shopping_cart
+            shopping_bag
           </span>
         </span>
       </div>

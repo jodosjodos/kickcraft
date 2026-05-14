@@ -6,6 +6,7 @@ const VALID_CATEGORIES: Record<string, string> = {
   men: "Men's Shoes",
   women: "Women's Shoes",
   kids: "Kids' Shoes",
+  sports: "Sports Shoes",
 };
 
 type Props = { params: Promise<{ category: string }> };

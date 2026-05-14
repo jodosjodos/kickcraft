@@ -11,6 +11,7 @@ export enum ProductCategory {
   Men = 'men',
   Women = 'women',
   Kids = 'kids',
+  Sports = 'sports',
 }
 
 export enum ProductSubCategory {

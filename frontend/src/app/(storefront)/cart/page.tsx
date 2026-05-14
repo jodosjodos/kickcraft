@@ -18,7 +18,7 @@ export default function CartPage() {
           </span>
         </div>
         <h1 className="font-heading text-2xl font-extrabold uppercase tracking-tight text-text mb-3">
-          Your cart is empty
+          Your bag is empty
         </h1>
         <p className="font-body text-sm text-text-muted mb-8">
           Browse our collection and add something you love.
@@ -44,7 +44,7 @@ export default function CartPage() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <h1 className="font-heading text-2xl font-extrabold uppercase tracking-tight text-text">
-          Shopping Cart
+          Shopping Bag
         </h1>
         <span className="font-body text-xs font-bold uppercase tracking-wider text-text-muted bg-surface-elevated border border-border px-2.5 py-1">
           {itemCount} {itemCount === 1 ? "item" : "items"}
@@ -90,7 +90,7 @@ export default function CartPage() {
                   </p>
                   <Link
                     href={`/products/${item.slug}`}
-                    className="font-heading text-sm font-extrabold uppercase tracking-tight text-text hover:text-primary transition-colors line-clamp-2"
+                    className="font-heading text-sm font-extrabold tracking-tight text-text hover:text-primary transition-colors line-clamp-2"
                   >
                     {item.name}
                   </Link>

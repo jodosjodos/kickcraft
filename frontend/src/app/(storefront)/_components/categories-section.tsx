@@ -6,22 +6,25 @@ const CATEGORIES = [
     slug: "men",
     label: "Men",
     description: "Jordans, Dunks & more",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBvLFmBfnNVA9bJijjZph__8KpuIvMmO4Y2TAmqT9GLMhGuAXmCJ27BIddwZ3Qq-bh8cbstcbPyyB-ZtzHwv6LRRTcLb6_jl49bQQpiFVr8jOHLjq1PqdXXGZw3I2j-kX2spGaq4aaS2rXpssMaV6ZmTIw_97lfVIe0ChNkWG885HhTqm8sPsKbqz6MMbJtMkhCVHqrQsj8MODDT1qEbgrqWkk3fDiBdzEDH9zpFamsUOFrc8WPpYt2vmJvFozIjEY3BGu1-zwLiLIN",
+    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
   },
   {
     slug: "women",
     label: "Women",
     description: "New Balance, Vans & more",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCGIDc-lpNpj-R7G2E_uQ67RB80Bc_vmaq7ZPG0P2-yKZieZE9ARV-YUsFL92_ahK7Tn02W_2UTCmdrxUR3aJw9GrTtjtTD9plYpwFVIUYIS_HhRHyhYBE3-gTBqqOzcDgrfx3-qCOob-MjddIIRgIz5HQ1MJpPLWW_HbR5RUF12lEWW9szYdXbV-htyzPQ5BC_dvrYJptvdbUCeIIS8dy4dT9tc7Y6NkjUvthU4NBDRpnJ5NiDorsF458C1Nd64oTjGhttlioO-ORs",
+    image: "https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&w=800&q=80",
   },
   {
     slug: "kids",
     label: "Kids",
     description: "Converse, Puma & more",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAFkjOWq_r41Z10pKAIKaG44pHnXpM-fzy4LjNzIAsvs-V-rpKMBiFHyPMesq8bRn2bRlLdrTqfAwL-lZb1G_EV-wIbA73WYamv0wRHhFrk-1bG-xGwiB7y8I9Tg_nJcsJPakqLGLN5Bt3nDcrblaekmBe9B5pzC2CA1DtKkizFhVDDBp7kG9Wp2U0tWrumQMRAwzeGJ44Sz6qEu7Y8sDl8W44i1XQLC7F5XowTX74YrgEGSJ1Vc1u_R5ZVJIjyHMo7WiAM4RRZN9K4",
+    image: "https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    slug: "sports",
+    label: "Sports",
+    description: "Running, training & more",
+    image: "https://images.unsplash.com/photo-1539185441755-769473a23570?auto=format&fit=crop&w=800&q=80",
   },
 ];
 
@@ -48,7 +51,7 @@ export function CategoriesSection() {
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-auto md:h-[520px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 h-auto lg:h-[460px]">
           {CATEGORIES.map(({ slug, label, description, image }) => (
             <Link
               key={slug}
@@ -60,7 +63,7 @@ export function CategoriesSection() {
                 src={image}
                 alt={`${label}'s shoes`}
                 fill
-                sizes="(max-width: 768px) 100vw, 33vw"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
 

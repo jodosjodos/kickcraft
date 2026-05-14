@@ -8,11 +8,12 @@ const socialLinks = [
 ];
 
 const shopLinks = [
-  { label: "Shop All", href: "/shop" },
+  { label: "Sales", href: "/shop" },
   { label: "Hot Deals", href: "/hot-deals" },
   { label: "Men", href: "/shop/men" },
   { label: "Women", href: "/shop/women" },
   { label: "Kids", href: "/shop/kids" },
+  { label: "Sports", href: "/shop/sports" },
 ];
 
 export function Footer() {
@@ -33,7 +34,7 @@ export function Footer() {
         {/* Shop */}
         <div>
           <h3 className="font-heading text-xs font-bold uppercase tracking-wider text-text mb-4">
-            Shop
+            Sales
           </h3>
           <ul className="flex flex-col gap-2">
             {shopLinks.map(({ label, href }) => (
@@ -56,7 +57,7 @@ export function Footer() {
           </h3>
           <ul className="flex flex-col gap-2">
             {[
-              { label: "About Us", href: "/about" },
+              { label: "Our Story", href: "/about" },
               { label: "Contact", href: "/contact" },
               { label: "Wishlist", href: "/wishlist" },
             ].map(({ label, href }) => (

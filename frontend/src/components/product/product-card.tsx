@@ -105,7 +105,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
         <p className="font-body text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
           {product.brand}
         </p>
-        <h3 className="font-heading text-sm font-bold uppercase tracking-tight text-text truncate mb-2 group-hover:text-primary transition-colors duration-200">
+        <h3 className="font-heading text-sm font-bold tracking-tight text-text truncate mb-2 group-hover:text-primary transition-colors duration-200">
           {product.name}
         </h3>
 

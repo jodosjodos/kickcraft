@@ -29,7 +29,7 @@ export function MobileNav() {
     { label: "Shop", href: "/shop", icon: "storefront" },
     { label: "Search", href: "/search", icon: "search" },
     { label: "Home", href: "/", icon: "home", primary: true },
-    { label: "Cart", href: "/cart", icon: "shopping_bag", badge: itemCount },
+    { label: "Bag", href: "/cart", icon: "shopping_bag", badge: itemCount },
   ];
 
   return (

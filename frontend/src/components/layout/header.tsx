@@ -12,11 +12,12 @@ import { cn } from "@/lib/utils";
 
 const navLinks = [
   { label: "Home", href: "/" },
-  { label: "Shop", href: "/shop" },
+  { label: "Sales", href: "/shop" },
   { label: "Deals", href: "/hot-deals" },
   { label: "Men", href: "/shop/men" },
   { label: "Women", href: "/shop/women" },
   { label: "Kids", href: "/shop/kids" },
+  { label: "Sports", href: "/shop/sports" },
 ];
 
 export function Header() {
@@ -114,7 +115,7 @@ export function Header() {
             <Link
               href="/cart"
               className="p-2 hover:text-primary transition-colors duration-200 active:scale-95 relative"
-              aria-label="Cart"
+              aria-label="Bag"
             >
               <Icon name="shopping_bag" size={22} />
               {itemCount > 0 && (
