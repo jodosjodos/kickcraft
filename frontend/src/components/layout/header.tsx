@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/providers/auth-provider";
 import { useLogout } from "@/hooks/api/use-auth";
@@ -14,14 +14,15 @@ const navLinks = [
   { label: "Home", href: "/" },
   { label: "Sales", href: "/shop" },
   { label: "Deals", href: "/hot-deals" },
-  { label: "Men", href: "/shop/men" },
-  { label: "Women", href: "/shop/women" },
-  { label: "Kids", href: "/shop/kids" },
-  { label: "Sports", href: "/shop/sports" },
+  { label: "Men", href: "/shop?category=men" },
+  { label: "Women", href: "/shop?category=women" },
+  { label: "Kids", href: "/shop?category=kids" },
+  { label: "Sports", href: "/shop?category=sports" },
 ];
 
 export function Header() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const logoutMutation = useLogout();
   const { itemCount } = useCart();
@@ -30,8 +31,20 @@ export function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const isActive = (href: string): boolean => {
+    if (href === "/") return pathname === "/";
+    if (href.startsWith("/shop?category=")) {
+      const cat = new URLSearchParams(href.split("?")[1]).get("category");
+      return (
+        pathname === "/shop" &&
+        searchParams.getAll("category").includes(cat ?? "")
+      );
+    }
+    if (href === "/shop") {
+      return pathname === "/shop" && searchParams.getAll("category").length === 0;
+    }
+    return pathname.startsWith(href);
+  };
 
   const handleLogout = useCallback(() => {
     setDropdownOpen(false);

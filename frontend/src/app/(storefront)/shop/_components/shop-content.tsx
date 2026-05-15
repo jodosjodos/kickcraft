@@ -8,18 +8,36 @@ import { ProductCard } from "@/components/product/product-card";
 import { ProductFilters } from "@/components/product/product-filters";
 import { SortDropdown } from "@/components/product/sort-dropdown";
 import { Spinner } from "@/components/ui/spinner";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { SortOption, SubCategory, Product } from "@/types/api/products";
 
-const SUB_CATEGORIES: { value: SubCategory | ""; label: string }[] = [
-  { value: "", label: "All" },
-  { value: "sneakers", label: "Sneakers" },
-  { value: "loafers", label: "Loafers" },
-  { value: "boots", label: "Boots" },
-  { value: "slides", label: "Slides" },
-];
+const CATEGORY_TITLES: Record<string, string> = {
+  men: "Men's Shoes",
+  women: "Women's Shoes",
+  kids: "Kids' Shoes",
+  sports: "Sports Shoes",
+};
+
+function TitleBar() {
+  const searchParams = useSearchParams();
+  const categories = searchParams.getAll("category");
+  const q = searchParams.get("q");
+
+  let title = "Shop All Shoes";
+  if (categories.length === 1 && CATEGORY_TITLES[categories[0]]) {
+    title = CATEGORY_TITLES[categories[0]];
+  } else if (q) {
+    title = `Results for "${q}"`;
+  }
+
+  return (
+    <h1 className="font-heading text-2xl md:text-3xl font-extrabold uppercase tracking-tight text-text">
+      {title}
+    </h1>
+  );
+}
 
 function EditorsPick({ product }: { product: Product }) {
   const image = product.images[0];
@@ -32,7 +50,6 @@ function EditorsPick({ product }: { product: Product }) {
         Editor&apos;s Pick
       </span>
 
-      {/* Image */}
       <div className="relative w-full md:w-[42%] aspect-4/3 md:aspect-auto bg-product-card overflow-hidden shrink-0">
         {image ? (
           <Image
@@ -51,7 +68,6 @@ function EditorsPick({ product }: { product: Product }) {
         )}
       </div>
 
-      {/* Info */}
       <div className="flex flex-col justify-center p-6 md:p-10 gap-3">
         <p className="font-body text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">
           {product.brand}
@@ -76,51 +92,19 @@ function EditorsPick({ product }: { product: Product }) {
   );
 }
 
-function SubCategoryTabs() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const active = searchParams.get("subCategory") ?? "";
-
-  function setSubCategory(value: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set("subCategory", value);
-    } else {
-      params.delete("subCategory");
-    }
-    params.delete("page");
-    router.push(`${pathname}?${params.toString()}`);
-  }
-
-  return (
-    <div className="flex gap-0 border-b border-border mb-5 overflow-x-auto scrollbar-none">
-      {SUB_CATEGORIES.map(({ value, label }) => (
-        <button
-          key={value}
-          onClick={() => setSubCategory(value)}
-          className={cn(
-            "px-4 py-2.5 font-body text-sm font-semibold uppercase tracking-wider whitespace-nowrap transition-colors duration-150",
-            active === value
-              ? "text-primary border-b-2 border-primary -mb-px"
-              : "text-text-muted hover:text-text"
-          )}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function ShopGrid({ defaultCategory }: { defaultCategory?: string }) {
+function ShopGrid() {
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
 
+  const categoryParams = searchParams.getAll("category");
+  const subCategoryParams = searchParams.getAll("subCategory");
+
   const filters = {
-    category: searchParams.get("category") ?? defaultCategory ?? undefined,
+    category: categoryParams.length > 0 ? categoryParams : undefined,
     subCategory:
-      (searchParams.get("subCategory") as SubCategory) ?? undefined,
+      subCategoryParams.length > 0
+        ? (subCategoryParams as SubCategory[])
+        : undefined,
     size: searchParams.get("size") ?? undefined,
     minPrice: searchParams.get("minPrice")
       ? Number(searchParams.get("minPrice"))
@@ -158,10 +142,13 @@ function ShopGrid({ defaultCategory }: { defaultCategory?: string }) {
   const total = data?.total ?? 0;
   const shown = products.length;
 
-  // First product is Editor's Pick on the main /shop page (no active filters)
   const hasActiveFilters =
-    filters.category ||
-    filters.subCategory ||
+    (Array.isArray(filters.category)
+      ? filters.category.length > 0
+      : !!filters.category) ||
+    (Array.isArray(filters.subCategory)
+      ? filters.subCategory.length > 0
+      : !!filters.subCategory) ||
     filters.size ||
     filters.minPrice ||
     filters.maxPrice ||
@@ -190,7 +177,7 @@ function ShopGrid({ defaultCategory }: { defaultCategory?: string }) {
     <>
       {editorsPick && <EditorsPick product={editorsPick} />}
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+      <div className={cn("grid gap-3 md:gap-4", "grid-cols-2 md:grid-cols-3")}>
         {gridProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
@@ -210,43 +197,55 @@ function ShopGrid({ defaultCategory }: { defaultCategory?: string }) {
   );
 }
 
-export function ShopContent({
-  title,
-  defaultCategory,
-}: {
-  title: string;
-  defaultCategory?: string;
-}) {
+export function ShopContent() {
+  const [filterOpen, setFilterOpen] = useState(false);
+
   return (
     <div className="max-w-container mx-auto px-5 md:px-4 py-8">
       <div className="mb-6">
-        <h1 className="font-heading text-2xl md:text-3xl font-extrabold uppercase tracking-tight text-text">
-          {title}
-        </h1>
+        <Suspense
+          fallback={
+            <h1 className="font-heading text-2xl md:text-3xl font-extrabold uppercase tracking-tight text-text">
+              Shop All Shoes
+            </h1>
+          }
+        >
+          <TitleBar />
+        </Suspense>
       </div>
 
       <div className="flex gap-8">
-        {/* Sidebar filters — desktop only */}
-        <aside className="hidden md:block w-52 shrink-0">
-          <Suspense fallback={null}>
-            <ProductFilters defaultCategory={defaultCategory} />
-          </Suspense>
-        </aside>
+        {/* Sidebar filters — desktop visible, mobile drawer */}
+        <Suspense fallback={<div className="hidden md:block w-52 shrink-0" />}>
+          <ProductFilters
+            mobileOpen={filterOpen}
+            onMobileClose={() => setFilterOpen(false)}
+          />
+        </Suspense>
 
-        {/* Main */}
+        {/* Main content */}
         <div className="flex-1 min-w-0">
-          {/* Sub-category tabs */}
-          <Suspense fallback={null}>
-            <SubCategoryTabs />
-          </Suspense>
+          {/* Mobile toolbar */}
+          <div className="flex items-center justify-between mb-5 md:hidden">
+            <button
+              onClick={() => setFilterOpen(true)}
+              className="flex items-center gap-1.5 border border-border px-4 py-2 font-body text-sm font-semibold uppercase tracking-wider text-text hover:border-primary hover:text-primary transition-colors duration-150"
+            >
+              <span className="material-symbols-outlined icon-outline text-[16px]">
+                tune
+              </span>
+              Filters
+            </button>
+            <Suspense fallback={null}>
+              <SortDropdown />
+            </Suspense>
+          </div>
 
-          {/* Top bar: sort */}
-          <div className="flex items-center justify-end mb-5">
-            <div className="hidden md:block">
-              <Suspense fallback={null}>
-                <SortDropdown />
-              </Suspense>
-            </div>
+          {/* Desktop sort */}
+          <div className="hidden md:flex items-center justify-end mb-5">
+            <Suspense fallback={null}>
+              <SortDropdown />
+            </Suspense>
           </div>
 
           <Suspense
@@ -256,7 +255,7 @@ export function ShopContent({
               </div>
             }
           >
-            <ShopGrid defaultCategory={defaultCategory} />
+            <ShopGrid />
           </Suspense>
         </div>
       </div>

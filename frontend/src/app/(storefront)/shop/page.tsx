@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function ShopPage() {
-  return <ShopContent title="Shop All Shoes" />;
+  return <ShopContent />;
 }

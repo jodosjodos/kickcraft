@@ -10,8 +10,6 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   };
 }
 
-export default async function SearchPage({ searchParams }: Props) {
-  const { q } = await searchParams;
-  const title = q ? `Results for "${q}"` : "Search";
-  return <ShopContent title={title} />;
+export default async function SearchPage() {
+  return <ShopContent />;
 }

@@ -7,6 +7,20 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  paramsSerializer: {
+    serialize: (params: Record<string, unknown>) => {
+      const usp = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value === undefined || value === null) continue;
+        if (Array.isArray(value)) {
+          value.forEach((v) => usp.append(key, String(v)));
+        } else {
+          usp.set(key, String(value));
+        }
+      }
+      return usp.toString();
+    },
+  },
 });
 
 apiClient.interceptors.response.use(

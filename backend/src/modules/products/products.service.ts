@@ -1,8 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product, ProductImageData, ProductStatus } from './product.entity';
@@ -36,11 +32,15 @@ export class ProductsService {
 
     const qb = this.repo.createQueryBuilder('p');
 
-    if (query.category) {
-      qb.andWhere('p.category = :cat', { cat: query.category });
+    if (query.category?.length) {
+      qb.andWhere('p.category IN (:...categories)', {
+        categories: query.category,
+      });
     }
-    if (query.subCategory) {
-      qb.andWhere('p.subCategory = :sub', { sub: query.subCategory });
+    if (query.subCategory?.length) {
+      qb.andWhere('p.subCategory IN (:...subCategories)', {
+        subCategories: query.subCategory,
+      });
     }
     if (query.brand) {
       qb.andWhere('LOWER(p.brand) = LOWER(:brand)', { brand: query.brand });
@@ -59,17 +59,15 @@ export class ProductsService {
       qb.andWhere('p.price <= :max', { max: query.maxPrice });
     }
     if (query.search) {
-      qb.andWhere(
-        '(LOWER(p.name) LIKE :q OR LOWER(p.brand) LIKE :q)',
-        { q: `%${query.search.toLowerCase()}%` },
-      );
+      qb.andWhere('(LOWER(p.name) LIKE :q OR LOWER(p.brand) LIKE :q)', {
+        q: `%${query.search.toLowerCase()}%`,
+      });
     }
     if (query.size) {
       // simple-array stores as "40,41,42" — wrap with commas to avoid partial matches
-      qb.andWhere(
-        `(',' || p.sizes || ',') LIKE :sizePattern`,
-        { sizePattern: `%,${query.size},%` },
-      );
+      qb.andWhere(`(',' || p.sizes || ',') LIKE :sizePattern`, {
+        sizePattern: `%,${query.size},%`,
+      });
     }
 
     switch (query.sort) {
@@ -110,7 +108,8 @@ export class ProductsService {
 
     // fallback: fill remaining slots from latest active products
     const ids = featured.map((p) => p.id);
-    const qb = this.repo.createQueryBuilder('p')
+    const qb = this.repo
+      .createQueryBuilder('p')
       .where('p.status = :status', { status: ProductStatus.Active })
       .orderBy('p.createdAt', 'DESC')
       .take(6 - featured.length);
@@ -157,10 +156,7 @@ export class ProductsService {
     return this.withImageIds(saved);
   }
 
-  async update(
-    id: string,
-    dto: UpdateProductDto,
-  ): Promise<ProductDto> {
+  async update(id: string, dto: UpdateProductDto): Promise<ProductDto> {
     const product = await this.repo.findOne({ where: { id } });
     if (!product) throw new NotFoundException('Product not found');
 
@@ -211,7 +207,10 @@ export class ProductsService {
       .replace(/^-|-$/g, '');
   }
 
-  private async ensureUniqueSlug(base: string, excludeId?: string): Promise<string> {
+  private async ensureUniqueSlug(
+    base: string,
+    excludeId?: string,
+  ): Promise<string> {
     let slug = base;
     let suffix = 1;
     for (;;) {

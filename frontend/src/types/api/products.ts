@@ -31,8 +31,8 @@ export interface Product {
 }
 
 export interface ProductFilters {
-  category?: string;
-  subCategory?: SubCategory;
+  category?: string | string[];
+  subCategory?: SubCategory | SubCategory[];
   size?: string;
   minPrice?: number;
   maxPrice?: number;

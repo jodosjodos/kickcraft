@@ -1,5 +1,12 @@
-import { IsEnum, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 import {
   ProductCategory,
   ProductStatus,
@@ -10,12 +17,20 @@ type StatusFilter = ProductStatus | 'all';
 
 export class ProductQueryDto {
   @IsOptional()
-  @IsEnum(ProductCategory)
-  category?: ProductCategory;
+  @Transform(
+    ({ value }: { value: unknown }) =>
+      (Array.isArray(value) ? value : [value]) as unknown[],
+  )
+  @IsEnum(ProductCategory, { each: true })
+  category?: ProductCategory[];
 
   @IsOptional()
-  @IsEnum(ProductSubCategory)
-  subCategory?: ProductSubCategory;
+  @Transform(
+    ({ value }: { value: unknown }) =>
+      (Array.isArray(value) ? value : [value]) as unknown[],
+  )
+  @IsEnum(ProductSubCategory, { each: true })
+  subCategory?: ProductSubCategory[];
 
   @IsOptional()
   @IsString()
