@@ -49,7 +49,7 @@ class EnvironmentVariables {
 
   @IsNumber()
   @Min(1)
-  MINIO_PORT: number = 9000;
+  MINIO_PORT: number;
 
   @IsString()
   MINIO_USE_SSL: string = 'false';

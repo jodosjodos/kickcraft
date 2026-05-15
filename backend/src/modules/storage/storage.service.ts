@@ -38,7 +38,9 @@ export class StorageService implements OnModuleInit {
           ],
         });
         await this.client.setBucketPolicy(this.bucket, policy);
-        this.logger.log(`Bucket "${this.bucket}" created with public read policy`);
+        this.logger.log(
+          `Bucket "${this.bucket}" created with public read policy`,
+        );
       }
     } catch (err) {
       this.logger.error('MinIO init failed', err);
@@ -55,6 +57,6 @@ export class StorageService implements OnModuleInit {
     await this.client.putObject(this.bucket, key, buffer, buffer.length, {
       'Content-Type': mimeType,
     });
-    return `${this.publicUrl}/${this.bucket}/${key}`;
+    return `${this.publicUrl}/${key}`;
   }
 }
