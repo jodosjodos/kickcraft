@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useAuth } from "@/providers/auth-provider";
 import { useLogout } from "@/hooks/api/use-auth";
 import { useCart } from "@/providers/cart-provider";
@@ -20,16 +20,12 @@ const navLinks = [
   { label: "Sports", href: "/shop?category=sports" },
 ];
 
-export function Header() {
+const navLinkClass =
+  "font-heading text-sm font-bold uppercase tracking-tight py-1 transition-colors duration-200";
+
+function NavLinks() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
-  const logoutMutation = useLogout();
-  const { itemCount } = useCart();
-  const { count: wishlistCount } = useWishlist();
-
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isActive = (href: string): boolean => {
     if (href === "/") return pathname === "/";
@@ -45,6 +41,51 @@ export function Header() {
     }
     return pathname.startsWith(href);
   };
+
+  return (
+    <ul className="flex items-center gap-6">
+      {navLinks.map(({ label, href }) => (
+        <li key={href}>
+          <Link
+            href={href}
+            className={cn(
+              navLinkClass,
+              isActive(href)
+                ? "text-primary border-b-2 border-primary"
+                : "text-text-muted hover:text-primary"
+            )}
+          >
+            {label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function NavLinksFallback() {
+  return (
+    <ul className="flex items-center gap-6">
+      {navLinks.map(({ label, href }) => (
+        <li key={href}>
+          <Link href={href} className={cn(navLinkClass, "text-text-muted hover:text-primary")}>
+            {label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function Header() {
+  const pathname = usePathname();
+  const { user } = useAuth();
+  const logoutMutation = useLogout();
+  const { itemCount } = useCart();
+  const { count: wishlistCount } = useWishlist();
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = useCallback(() => {
     setDropdownOpen(false);
@@ -62,7 +103,6 @@ export function Header() {
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [dropdownOpen]);
 
-  // Close dropdown on route change
   useEffect(() => {
     setDropdownOpen(false);
   }, [pathname]);
@@ -82,23 +122,9 @@ export function Header() {
             </Link>
 
             <nav>
-              <ul className="flex items-center gap-6">
-                {navLinks.map(({ label, href }) => (
-                  <li key={href}>
-                    <Link
-                      href={href}
-                      className={cn(
-                        "font-heading text-sm font-bold uppercase tracking-tight py-1 transition-colors duration-200",
-                        isActive(href)
-                          ? "text-primary border-b-2 border-primary"
-                          : "text-text-muted hover:text-primary"
-                      )}
-                    >
-                      {label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <Suspense fallback={<NavLinksFallback />}>
+                <NavLinks />
+              </Suspense>
             </nav>
           </div>
 
@@ -154,7 +180,6 @@ export function Header() {
 
                 {dropdownOpen && (
                   <div className="absolute right-0 top-full mt-2 w-52 bg-surface border border-border shadow-[0_8px_24px_rgba(0,0,0,0.4)] z-50">
-                    {/* User info */}
                     <div className="px-4 py-3 border-b border-border">
                       <p className="font-heading text-sm font-extrabold uppercase tracking-tight text-text truncate">
                         {user.name}

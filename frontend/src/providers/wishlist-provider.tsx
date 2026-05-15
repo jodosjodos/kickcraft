@@ -8,8 +8,8 @@ import {
   useState,
 } from "react";
 import type { Product } from "@/types/api/products";
+import { useAuth } from "@/providers/auth-provider";
 
-const STORAGE_KEY = "kc_wishlist";
 const EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface WishlistItem {
@@ -32,10 +32,14 @@ interface WishlistContextValue {
 
 const WishlistContext = createContext<WishlistContextValue | null>(null);
 
-function loadWishlist(): WishlistItem[] {
+function getKey(userId: string | undefined): string {
+  return userId ? `kc_wishlist_${userId}` : "kc_wishlist_guest";
+}
+
+function loadWishlist(userId: string | undefined): WishlistItem[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(getKey(userId));
     if (!raw) return [];
     const parsed = JSON.parse(raw) as WishlistItem[];
     const now = Date.now();
@@ -45,54 +49,62 @@ function loadWishlist(): WishlistItem[] {
   }
 }
 
-function saveWishlist(items: WishlistItem[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+function saveWishlist(userId: string | undefined, items: WishlistItem[]) {
+  localStorage.setItem(getKey(userId), JSON.stringify(items));
 }
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
   const [items, setItems] = useState<WishlistItem[]>([]);
 
   useEffect(() => {
-    setItems(loadWishlist());
-  }, []);
+    if (isLoading) return;
+    setItems(loadWishlist(user?.id));
+  }, [user?.id, isLoading]);
 
   const isWishlisted = useCallback(
     (productId: string) => items.some((i) => i.productId === productId),
-    [items]
+    [items],
   );
 
-  const toggle = useCallback((product: Product) => {
-    setItems((prev) => {
-      const exists = prev.some((i) => i.productId === product.id);
-      let next: WishlistItem[];
-      if (exists) {
-        next = prev.filter((i) => i.productId !== product.id);
-      } else {
-        next = [
-          ...prev,
-          {
-            productId: product.id,
-            slug: product.slug,
-            name: product.name,
-            brand: product.brand,
-            price: product.price,
-            imageUrl: product.images[0]?.url,
-            addedAt: Date.now(),
-          },
-        ];
-      }
-      saveWishlist(next);
-      return next;
-    });
-  }, []);
+  const toggle = useCallback(
+    (product: Product) => {
+      setItems((prev) => {
+        const exists = prev.some((i) => i.productId === product.id);
+        let next: WishlistItem[];
+        if (exists) {
+          next = prev.filter((i) => i.productId !== product.id);
+        } else {
+          next = [
+            ...prev,
+            {
+              productId: product.id,
+              slug: product.slug,
+              name: product.name,
+              brand: product.brand,
+              price: product.price,
+              imageUrl: product.images[0]?.url,
+              addedAt: Date.now(),
+            },
+          ];
+        }
+        saveWishlist(user?.id, next);
+        return next;
+      });
+    },
+    [user?.id],
+  );
 
-  const remove = useCallback((productId: string) => {
-    setItems((prev) => {
-      const next = prev.filter((i) => i.productId !== productId);
-      saveWishlist(next);
-      return next;
-    });
-  }, []);
+  const remove = useCallback(
+    (productId: string) => {
+      setItems((prev) => {
+        const next = prev.filter((i) => i.productId !== productId);
+        saveWishlist(user?.id, next);
+        return next;
+      });
+    },
+    [user?.id],
+  );
 
   return (
     <WishlistContext.Provider
