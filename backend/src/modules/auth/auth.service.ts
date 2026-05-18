@@ -17,6 +17,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UserStatus } from '../users/user.entity';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ConfirmPasswordChangeDto } from './dto/confirm-password-change.dto';
@@ -85,6 +86,9 @@ export class AuthService {
       throw new UnauthorizedException(
         'Please verify your email before logging in',
       );
+
+    if (user.status === UserStatus.Banned)
+      throw new UnauthorizedException('Your account has been suspended.');
 
     const expiresIn = this.config.getOrThrow<number>('JWT_EXPIRES_IN');
     const token = this.jwtService.sign(

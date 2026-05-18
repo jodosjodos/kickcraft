@@ -1,85 +1,19 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { SlideOver } from "@/components/admin/slide-over";
+import { Modal } from "@/components/ui/modal";
+import { Spinner } from "@/components/ui/spinner";
+import {
+  useAdminUsers,
+  useAdminUser,
+  useUpdateUserStatus,
+  useUpdateUserNotes,
+} from "@/hooks/api/use-users";
+import type { AdminUserListItem, UserStatus } from "@/types/api/users";
 
-type UserStatus = "active" | "banned";
 type Tier = "Platinum" | "Gold" | "Silver" | "Bronze";
-
-interface MockUser {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  joinedAt: string;
-  lastActive: string;
-  orderCount: number;
-  totalSpent: number;
-  status: UserStatus;
-}
-
-interface MockUserOrder {
-  id: string;
-  date: string;
-  status: string;
-  total: number;
-  items: number;
-}
-
-const MOCK_ORDERS_BY_USER: Record<string, MockUserOrder[]> = {
-  "1": [
-    { id: "KC-0041", date: "2025-05-01", status: "delivered", total: 78000, items: 1 },
-    { id: "KC-0033", date: "2025-04-12", status: "delivered", total: 65000, items: 1 },
-    { id: "KC-0021", date: "2025-03-08", status: "delivered", total: 89000, items: 2 },
-    { id: "KC-0015", date: "2025-02-20", status: "cancelled", total: 45000, items: 1 },
-    { id: "KC-0009", date: "2025-01-14", status: "delivered", total: 43000, items: 1 },
-  ],
-  "2": [
-    { id: "KC-0038", date: "2025-04-28", status: "delivered", total: 55000, items: 1 },
-    { id: "KC-0022", date: "2025-03-15", status: "delivered", total: 40000, items: 1 },
-  ],
-  "3": [
-    { id: "KC-0048", date: "2025-05-08", status: "out_for_delivery", total: 92000, items: 2 },
-    { id: "KC-0044", date: "2025-05-03", status: "confirmed", total: 78000, items: 1 },
-    { id: "KC-0036", date: "2025-04-18", status: "delivered", total: 65000, items: 1 },
-    { id: "KC-0030", date: "2025-04-01", status: "delivered", total: 88000, items: 2 },
-    { id: "KC-0025", date: "2025-03-20", status: "delivered", total: 72000, items: 1 },
-    { id: "KC-0018", date: "2025-03-05", status: "delivered", total: 55000, items: 1 },
-    { id: "KC-0012", date: "2025-02-14", status: "delivered", total: 48000, items: 1 },
-    { id: "KC-0006", date: "2025-01-30", status: "delivered", total: 42000, items: 1 },
-  ],
-  "4": [
-    { id: "KC-0040", date: "2025-04-30", status: "pending", total: 48000, items: 1 },
-  ],
-  "5": [
-    { id: "KC-0045", date: "2025-05-05", status: "confirmed", total: 68000, items: 1 },
-    { id: "KC-0029", date: "2025-04-02", status: "delivered", total: 55000, items: 1 },
-    { id: "KC-0014", date: "2025-02-18", status: "delivered", total: 52000, items: 1 },
-  ],
-  "7": [
-    { id: "KC-0043", date: "2025-05-02", status: "out_for_delivery", total: 88000, items: 2 },
-    { id: "KC-0035", date: "2025-04-15", status: "delivered", total: 62000, items: 1 },
-    { id: "KC-0027", date: "2025-03-28", status: "delivered", total: 65000, items: 1 },
-    { id: "KC-0016", date: "2025-02-25", status: "delivered", total: 45000, items: 1 },
-  ],
-  "8": [],
-};
-
-const MOCK_NOTES_BY_USER: Record<string, string> = {
-  "6": "VIP customer. Reached out via Instagram DM about Air Max Pulse restock. Notify on drop.",
-};
-
-const MOCK_USERS: MockUser[] = [
-  { id: "1", name: "Alice Uwimana", email: "alice@gmail.com", phone: "250788000001", joinedAt: "2024-11-03", lastActive: "2025-05-01", orderCount: 5, totalSpent: 320000, status: "active" },
-  { id: "2", name: "Bob Nkurunziza", email: "bob@gmail.com", phone: "250788000002", joinedAt: "2024-12-15", lastActive: "2025-04-28", orderCount: 2, totalSpent: 95000, status: "active" },
-  { id: "3", name: "Chantal Mukamana", email: "chantal@gmail.com", phone: "250788000003", joinedAt: "2025-01-08", lastActive: "2025-05-08", orderCount: 8, totalSpent: 540000, status: "active" },
-  { id: "4", name: "David Habimana", email: "david@gmail.com", phone: "250788000004", joinedAt: "2025-02-20", lastActive: "2025-04-30", orderCount: 1, totalSpent: 48000, status: "active" },
-  { id: "5", name: "Esperance Ingabire", email: "esp@gmail.com", phone: "250788000005", joinedAt: "2025-03-01", lastActive: "2025-05-05", orderCount: 3, totalSpent: 175000, status: "active" },
-  { id: "6", name: "Frank Mugisha", email: "frank@gmail.com", phone: "250788000006", joinedAt: "2025-03-18", lastActive: "2025-05-02", orderCount: 4, totalSpent: 260000, status: "active" },
-  { id: "7", name: "Grace Umutoni", email: "grace@gmail.com", phone: "250788000007", joinedAt: "2025-04-02", lastActive: "2025-04-02", orderCount: 0, totalSpent: 0, status: "active" },
-  { id: "8", name: "Heri Kalisa", email: "heri@gmail.com", phone: "250788000008", joinedAt: "2025-04-20", lastActive: "2025-04-20", orderCount: 0, totalSpent: 0, status: "banned" },
-];
 
 const AVATAR_COLORS = [
   "bg-primary/20 text-primary",
@@ -146,194 +80,274 @@ function TierBadge({ tier }: { tier: Tier }) {
 }
 
 interface UserPanelProps {
-  user: MockUser;
+  userId: string;
   avatarColor: string;
   onClose: () => void;
-  onBan: (id: string) => void;
 }
 
-function UserPanel({ user, avatarColor, onClose, onBan }: UserPanelProps) {
+function UserPanel({ userId, avatarColor, onClose }: UserPanelProps) {
   const [tab, setTab] = useState<"orders" | "notes">("orders");
-  const tier = getTier(user.totalSpent);
-  const orders = MOCK_ORDERS_BY_USER[user.id] ?? [];
-  const avgOrder = orders.length > 0 ? Math.round(user.totalSpent / orders.length) : 0;
-  const note = MOCK_NOTES_BY_USER[user.id];
+  const [noteText, setNoteText] = useState<string | null>(null);
+  const [confirmBanOpen, setConfirmBanOpen] = useState(false);
+  const { data: user, isLoading } = useAdminUser(userId, true);
+  const updateStatus = useUpdateUserStatus();
+  const updateNotes = useUpdateUserNotes();
+
+  const tier = user ? getTier(user.totalSpent) : "Bronze";
+  const avgOrder =
+    user && user.orderCount > 0
+      ? Math.round(user.totalSpent / user.orderCount)
+      : 0;
+  const lastActive =
+    user?.orders[0]?.createdAt
+      ? relativeDate(user.orders[0].createdAt)
+      : user
+      ? relativeDate(user.createdAt)
+      : "—";
+
+  const currentNote = noteText !== null ? noteText : (user?.adminNotes ?? "");
+
+  function confirmBan() {
+    if (!user) return;
+    updateStatus.mutate(
+      { id: user.id, status: "banned" },
+      {
+        onSuccess: () => {
+          setConfirmBanOpen(false);
+          onClose();
+        },
+      },
+    );
+  }
+
+  function handleUnban() {
+    if (!user) return;
+    updateStatus.mutate(
+      { id: user.id, status: "active" },
+      { onSuccess: onClose },
+    );
+  }
+
+  function handleSaveNote() {
+    if (!user) return;
+    updateNotes.mutate({ id: user.id, notes: currentNote });
+  }
 
   return (
     <SlideOver
       open
       onClose={onClose}
-      title={user.name}
-      subtitle={`Customer since ${formatDate(user.joinedAt)}`}
+      title={user?.name ?? "Customer"}
+      subtitle={user ? `Customer since ${formatDate(user.createdAt)}` : ""}
       width="lg"
       footer={
-        <div className="flex items-center gap-2">
-          {user.status === "active" ? (
-            <button
-              onClick={() => { onBan(user.id); onClose(); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-error/40 text-error font-body text-xs font-semibold uppercase tracking-wider hover:bg-error/10 transition-colors"
+        user ? (
+          <div className="flex items-center gap-2">
+            {user.status === "active" ? (
+              <button
+                onClick={() => setConfirmBanOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-error/40 text-error font-body text-xs font-semibold uppercase tracking-wider hover:bg-error/10 transition-colors"
+              >
+                <span className="material-symbols-outlined icon-outline text-[14px]">block</span>
+                Ban Customer
+              </button>
+            ) : (
+              <button
+                onClick={handleUnban}
+                disabled={updateStatus.isPending}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-secondary/40 text-secondary font-body text-xs font-semibold uppercase tracking-wider hover:bg-secondary/10 transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined icon-outline text-[14px]">check_circle</span>
+                Unban Customer
+              </button>
+            )}
+            <a
+              href={`https://wa.me/${user.phone}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-secondary/40 text-secondary font-body text-xs font-semibold uppercase tracking-wider hover:bg-secondary/10 transition-colors ml-auto"
             >
-              <span className="material-symbols-outlined icon-outline text-[14px]">block</span>
-              Ban Customer
-            </button>
-          ) : (
-            <button
-              onClick={() => { onBan(user.id); onClose(); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-secondary/40 text-secondary font-body text-xs font-semibold uppercase tracking-wider hover:bg-secondary/10 transition-colors"
-            >
-              <span className="material-symbols-outlined icon-outline text-[14px]">check_circle</span>
-              Unban Customer
-            </button>
-          )}
-          <a
-            href={`https://wa.me/${user.phone}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-secondary/40 text-secondary font-body text-xs font-semibold uppercase tracking-wider hover:bg-secondary/10 transition-colors ml-auto"
-          >
-            <span className="material-symbols-outlined icon-filled text-[14px]">chat</span>
-            WhatsApp
-          </a>
-        </div>
+              <span className="material-symbols-outlined icon-filled text-[14px]">chat</span>
+              WhatsApp
+            </a>
+          </div>
+        ) : undefined
       }
     >
-      {/* Profile header */}
-      <div className="flex items-start gap-4 mb-6">
-        <div className={cn("w-14 h-14 flex items-center justify-center shrink-0 font-heading text-xl font-extrabold", avatarColor)}>
-          {getInitials(user.name)}
+      {isLoading || !user ? (
+        <div className="flex items-center justify-center py-16">
+          <Spinner size="lg" className="text-primary" />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <p className="font-heading text-base font-extrabold uppercase tracking-tight text-text">{user.name}</p>
-            <TierBadge tier={tier} />
-            {user.status === "banned" && (
-              <span className="px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider bg-error/10 text-error">
-                Banned
-              </span>
-            )}
-          </div>
-          <p className="font-body text-xs text-text-muted">{user.email}</p>
-          <p className="font-body text-xs text-text-muted">+{user.phone}</p>
-        </div>
-      </div>
-
-      {/* 4 micro metric cards */}
-      <div className="grid grid-cols-2 gap-2 mb-6">
-        {[
-          { label: "Total Orders", value: String(user.orderCount), icon: "shopping_bag", color: "text-primary" },
-          { label: "Total Spent", value: formatPrice(user.totalSpent), icon: "payments", color: "text-secondary" },
-          { label: "Avg Order", value: avgOrder > 0 ? formatPrice(avgOrder) : "—", icon: "bar_chart", color: "text-[#ffb5a0]" },
-          { label: "Last Active", value: relativeDate(user.lastActive), icon: "schedule", color: "text-text-muted" },
-        ].map((m) => (
-          <div key={m.label} className="border border-border bg-surface-elevated px-3 py-3">
-            <div className="flex items-center gap-2 mb-1">
-              <span className={cn("material-symbols-outlined icon-filled text-[15px]", m.color)}>{m.icon}</span>
-              <p className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted">{m.label}</p>
+      ) : (
+        <>
+          {/* Profile header */}
+          <div className="flex items-start gap-4 mb-6">
+            <div className={cn("w-14 h-14 flex items-center justify-center shrink-0 font-heading text-xl font-extrabold", avatarColor)}>
+              {getInitials(user.name)}
             </div>
-            <p className="font-heading text-sm font-extrabold text-text leading-tight">{m.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b border-border">
-        {(["orders", "notes"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={cn(
-              "px-4 py-2 font-body text-xs font-semibold uppercase tracking-wider border-b-2 -mb-px transition-colors",
-              tab === t ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text"
-            )}
-          >
-            {t === "orders" ? `Orders (${orders.length})` : "Notes"}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      {tab === "orders" && (
-        <div className="space-y-2">
-          {orders.length === 0 ? (
-            <div className="py-10 text-center">
-              <span className="material-symbols-outlined icon-outline text-[36px] text-text-muted/20 block mb-2">shopping_bag</span>
-              <p className="font-body text-xs text-text-muted">No orders yet</p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <p className="font-heading text-base font-extrabold uppercase tracking-tight text-text">{user.name}</p>
+                <TierBadge tier={tier} />
+                {user.status === "banned" && (
+                  <span className="px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider bg-error/10 text-error">
+                    Banned
+                  </span>
+                )}
+              </div>
+              <p className="font-body text-xs text-text-muted">{user.email}</p>
+              <p className="font-body text-xs text-text-muted">+{user.phone}</p>
             </div>
-          ) : (
-            orders.map((order) => {
-              const statusCfg = ORDER_STATUS_CONFIG[order.status] ?? ORDER_STATUS_CONFIG.pending;
-              return (
-                <div key={order.id} className="flex items-center justify-between gap-3 px-3 py-2.5 border border-border bg-surface-elevated hover:bg-surface-high transition-colors">
-                  <div>
-                    <p className="font-body text-xs font-bold text-text">{order.id}</p>
-                    <p className="font-body text-[10px] text-text-muted">{formatDate(order.date)} · {order.items} item{order.items > 1 ? "s" : ""}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={cn("px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider", statusCfg.classes)}>
-                      {statusCfg.label}
-                    </span>
-                    <p className="font-heading text-xs font-extrabold text-text">{formatPrice(order.total)}</p>
-                  </div>
+          </div>
+
+          {/* 4 micro metric cards */}
+          <div className="grid grid-cols-2 gap-2 mb-6">
+            {[
+              { label: "Total Orders", value: String(user.orderCount), icon: "shopping_bag", color: "text-primary" },
+              { label: "Total Spent", value: formatPrice(user.totalSpent), icon: "payments", color: "text-secondary" },
+              { label: "Avg Order", value: avgOrder > 0 ? formatPrice(avgOrder) : "—", icon: "bar_chart", color: "text-[#ffb5a0]" },
+              { label: "Last Active", value: lastActive, icon: "schedule", color: "text-text-muted" },
+            ].map((m) => (
+              <div key={m.label} className="border border-border bg-surface-elevated px-3 py-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={cn("material-symbols-outlined icon-filled text-[15px]", m.color)}>{m.icon}</span>
+                  <p className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted">{m.label}</p>
                 </div>
-              );
-            })
-          )}
-        </div>
-      )}
+                <p className="font-heading text-sm font-extrabold text-text leading-tight">{m.value}</p>
+              </div>
+            ))}
+          </div>
 
-      {tab === "notes" && (
-        <div>
-          <textarea
-            defaultValue={note ?? ""}
-            placeholder="Add internal notes about this customer…"
-            rows={6}
-            className="w-full px-3 py-2.5 bg-surface border border-border font-body text-sm text-text placeholder:text-text-muted/40 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 resize-none transition-colors"
-          />
-          <button className="mt-2 px-4 py-1.5 bg-primary text-white font-body text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity">
-            Save Note
-          </button>
-        </div>
+          {/* Tabs */}
+          <div className="flex gap-1 mb-4 border-b border-border">
+            {(["orders", "notes"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={cn(
+                  "px-4 py-2 font-body text-xs font-semibold uppercase tracking-wider border-b-2 -mb-px transition-colors",
+                  tab === t ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text"
+                )}
+              >
+                {t === "orders" ? `Orders (${user.orders.length})` : "Notes"}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          {tab === "orders" && (
+            <div className="space-y-2">
+              {user.orders.length === 0 ? (
+                <div className="py-10 text-center">
+                  <span className="material-symbols-outlined icon-outline text-[36px] text-text-muted/20 block mb-2">shopping_bag</span>
+                  <p className="font-body text-xs text-text-muted">No orders yet</p>
+                </div>
+              ) : (
+                user.orders.map((order) => {
+                  const statusCfg = ORDER_STATUS_CONFIG[order.status] ?? ORDER_STATUS_CONFIG.pending;
+                  return (
+                    <div key={order.id} className="flex items-center justify-between gap-3 px-3 py-2.5 border border-border bg-surface-elevated hover:bg-surface-high transition-colors">
+                      <div>
+                        <p className="font-body text-xs font-bold text-text">{order.orderToken}</p>
+                        <p className="font-body text-[10px] text-text-muted">
+                          {formatDate(order.createdAt)} · {order.itemCount} item{order.itemCount !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={cn("px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider", statusCfg.classes)}>
+                          {statusCfg.label}
+                        </span>
+                        <p className="font-heading text-xs font-extrabold text-text">{formatPrice(order.total)}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {tab === "notes" && (
+            <div>
+              <textarea
+                value={currentNote}
+                onChange={(e) => setNoteText(e.target.value)}
+                placeholder="Add internal notes about this customer…"
+                rows={6}
+                className="w-full px-3 py-2.5 bg-surface border border-border font-body text-sm text-text placeholder:text-text-muted/40 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 resize-none transition-colors"
+              />
+              <button
+                onClick={handleSaveNote}
+                disabled={updateNotes.isPending}
+                className="mt-2 px-4 py-1.5 bg-primary text-white font-body text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {updateNotes.isPending ? "Saving…" : "Save Note"}
+              </button>
+            </div>
+          )}
+        </>
       )}
+      <Modal
+        open={confirmBanOpen}
+        onClose={() => setConfirmBanOpen(false)}
+        title="Ban Customer"
+      >
+        <div className="space-y-4">
+          <p className="font-body text-sm text-text">
+            Ban <span className="font-semibold">{user?.name}</span>? They will no longer be able to log in. Existing orders remain tracked.
+          </p>
+          <div className="flex items-center gap-2 justify-end">
+            <button
+              onClick={() => setConfirmBanOpen(false)}
+              className="px-4 py-1.5 border border-border font-body text-xs font-semibold text-text-muted hover:text-text hover:border-outline transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmBan}
+              disabled={updateStatus.isPending}
+              className="px-4 py-1.5 bg-primary text-white font-body text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {updateStatus.isPending ? "Banning…" : "Yes, Ban"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </SlideOver>
   );
 }
 
 export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | UserStatus>("all");
-  const [selectedUser, setSelectedUser] = useState<MockUser | null>(null);
-  const [users, setUsers] = useState(MOCK_USERS);
+  const [page, setPage] = useState(1);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
-    return users.filter((u) => {
-      const matchStatus = statusFilter === "all" || u.status === statusFilter;
-      const q = search.toLowerCase();
-      const matchSearch =
-        !q ||
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.phone.includes(q);
-      return matchStatus && matchSearch;
-    });
-  }, [users, search, statusFilter]);
+  const limit = 20;
+  const { data, isLoading } = useAdminUsers({ search, status: statusFilter, page, limit });
 
-  const totalCustomers = users.length;
-  const newThisMonth = users.filter((u) => {
-    const d = new Date(u.joinedAt);
-    return d.getMonth() === 4 && d.getFullYear() === 2025;
-  }).length;
-  const avgLTV = Math.round(
-    users.filter((u) => u.totalSpent > 0).reduce((s, u) => s + u.totalSpent, 0) /
-    Math.max(1, users.filter((u) => u.totalSpent > 0).length)
-  );
+  const users = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const summary = data?.summary;
+  const totalPages = Math.ceil(total / limit);
 
-  function toggleBan(id: string) {
-    setUsers((prev) =>
-      prev.map((u) => u.id === id ? { ...u, status: u.status === "banned" ? "active" : "banned" } : u)
-    );
+  function handleSearch() {
+    setSearch(searchInput);
+    setPage(1);
   }
 
-  const selectedUserIndex = selectedUser ? users.findIndex((u) => u.id === selectedUser.id) : -1;
+  function handleStatusFilter(s: "all" | UserStatus) {
+    setStatusFilter(s);
+    setPage(1);
+  }
+
+  const selectedUserIndex = selectedUserId
+    ? users.findIndex((u) => u.id === selectedUserId)
+    : -1;
+  const avatarColor =
+    selectedUserIndex >= 0
+      ? AVATAR_COLORS[selectedUserIndex % AVATAR_COLORS.length]
+      : AVATAR_COLORS[0];
 
   return (
     <div className="space-y-6">
@@ -348,21 +362,21 @@ export default function AdminUsersPage() {
         {[
           {
             label: "Total Customers",
-            value: String(totalCustomers),
+            value: String(summary?.totalCustomers ?? 0),
             icon: "group",
             color: "text-primary",
-            sub: `${users.filter((u) => u.status === "active").length} active`,
+            sub: `${summary?.activeCustomers ?? 0} active`,
           },
           {
             label: "New This Month",
-            value: String(newThisMonth),
+            value: String(summary?.newThisMonth ?? 0),
             icon: "person_add",
             color: "text-secondary",
-            sub: "May 2025",
+            sub: new Date().toLocaleDateString("en-RW", { month: "long", year: "numeric" }),
           },
           {
             label: "Avg Lifetime Value",
-            value: formatPrice(avgLTV),
+            value: summary ? formatPrice(summary.avgLTV) : "—",
             icon: "trending_up",
             color: "text-[#ffb5a0]",
             sub: "Paying customers only",
@@ -381,163 +395,166 @@ export default function AdminUsersPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+        <div className="relative flex-1 min-w-[200px] max-w-sm flex">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined icon-outline text-[16px] text-text-muted pointer-events-none">
             search
           </span>
           <input
             type="text"
             placeholder="Search name, email, phone…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             className="w-full pl-9 pr-3 py-2 bg-surface border border-border font-body text-sm text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-colors"
           />
         </div>
 
         <div className="flex gap-1">
-          {(["all", "active", "banned"] as const).map((s) => {
-            const count = s === "all" ? users.length : users.filter((u) => u.status === s).length;
-            return (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3.5 py-1.5 font-body text-xs font-semibold uppercase tracking-wider border transition-all duration-150",
-                  statusFilter === s
-                    ? "bg-primary text-white border-primary"
-                    : "bg-surface text-text-muted border-border hover:text-text hover:border-outline"
-                )}
-              >
-                {s === "all" ? "All" : s}
-                {count > 0 && (
-                  <span className={cn(
-                    "min-w-[18px] h-[18px] flex items-center justify-center font-body text-[10px] font-bold px-1",
-                    statusFilter === s
-                      ? "bg-white/20 text-white"
-                      : s === "banned"
-                      ? "bg-error/10 text-error"
-                      : "bg-surface-elevated text-text-muted"
-                  )}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+          {(["all", "active", "banned"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => handleStatusFilter(s)}
+              className={cn(
+                "flex items-center gap-1.5 px-3.5 py-1.5 font-body text-xs font-semibold uppercase tracking-wider border transition-all duration-150",
+                statusFilter === s
+                  ? "bg-primary text-white border-primary"
+                  : "bg-surface text-text-muted border-border hover:text-text hover:border-outline"
+              )}
+            >
+              {s === "all" ? "All" : s}
+              {s === "all" && summary && (
+                <span className={cn("min-w-[18px] h-[18px] flex items-center justify-center font-body text-[10px] font-bold px-1", statusFilter === s ? "bg-white/20 text-white" : "bg-surface-elevated text-text-muted")}>
+                  {summary.totalCustomers}
+                </span>
+              )}
+              {s === "active" && summary && (
+                <span className={cn("min-w-[18px] h-[18px] flex items-center justify-center font-body text-[10px] font-bold px-1", statusFilter === s ? "bg-white/20 text-white" : "bg-surface-elevated text-text-muted")}>
+                  {summary.activeCustomers}
+                </span>
+              )}
+              {s === "banned" && summary && (
+                <span className={cn("min-w-[18px] h-[18px] flex items-center justify-center font-body text-[10px] font-bold px-1", statusFilter === s ? "bg-white/20 text-white" : "bg-error/10 text-error")}>
+                  {summary.totalCustomers - summary.activeCustomers}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Table */}
       <div className="border border-border bg-surface overflow-x-auto">
-        {/* Header row */}
-        <div className="hidden xl:grid grid-cols-[40px_1fr_180px_130px_80px_80px_120px_110px_80px] gap-3 px-5 py-2.5 border-b border-border bg-surface-elevated">
-          {["", "Customer", "Email", "Phone", "Orders", "Spent", "Tier", "Joined", "Status"].map((h) => (
-            <p key={h} className="font-body text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted">{h}</p>
+        <div className="hidden xl:grid grid-cols-[40px_1fr_180px_130px_80px_80px_120px_110px_80px_40px] gap-3 px-5 py-2.5 border-b border-border bg-surface-elevated">
+          {["", "Customer", "Email", "Phone", "Orders", "Spent", "Tier", "Joined", "Status", ""].map((h, i) => (
+            <p key={i} className="font-body text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted">{h}</p>
           ))}
         </div>
 
-        <div className="divide-y divide-border">
-          {filtered.length === 0 ? (
-            <div className="px-5 py-14 text-center">
-              <span className="material-symbols-outlined icon-outline text-[40px] text-text-muted/20 block mb-3">group</span>
-              <p className="font-body text-sm text-text-muted">No customers match your search</p>
-            </div>
-          ) : (
-            filtered.map((user, i) => {
-              const avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
-              const tier = getTier(user.totalSpent);
-              const tierCfg = TIER_CONFIG[tier];
-              return (
-                <button
-                  key={user.id}
-                  onClick={() => setSelectedUser(user)}
-                  className={cn(
-                    "w-full text-left flex xl:grid xl:grid-cols-[40px_1fr_180px_130px_80px_80px_120px_110px_80px] gap-3 items-center px-5 py-3.5 hover:bg-surface-elevated transition-colors",
-                    user.status === "banned" && "opacity-60"
-                  )}
-                >
-                  {/* Avatar */}
-                  <div className={cn("w-8 h-8 flex items-center justify-center shrink-0 font-heading text-xs font-extrabold", avatarColor)}>
-                    {getInitials(user.name)}
-                  </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Spinner size="lg" className="text-primary" />
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {users.length === 0 ? (
+              <div className="px-5 py-14 text-center">
+                <span className="material-symbols-outlined icon-outline text-[40px] text-text-muted/20 block mb-3">group</span>
+                <p className="font-body text-sm text-text-muted">No customers found</p>
+              </div>
+            ) : (
+              users.map((user: AdminUserListItem, i: number) => {
+                const avatarCol = AVATAR_COLORS[i % AVATAR_COLORS.length];
+                const tier = getTier(user.totalSpent);
+                const tierCfg = TIER_CONFIG[tier];
+                return (
+                  <button
+                    key={user.id}
+                    onClick={() => setSelectedUserId(user.id)}
+                    className={cn(
+                      "w-full text-left flex xl:grid xl:grid-cols-[40px_1fr_180px_130px_80px_80px_120px_110px_80px_40px] gap-3 items-center px-5 py-3.5 hover:bg-surface-elevated transition-colors",
+                      user.status === "banned" && "opacity-60"
+                    )}
+                  >
+                    <div className={cn("w-8 h-8 flex items-center justify-center shrink-0 font-heading text-xs font-extrabold", avatarCol)}>
+                      {getInitials(user.name)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-body text-sm font-semibold text-text truncate">{user.name}</p>
+                      <p className="font-body text-[10px] text-text-muted xl:hidden truncate">{user.email}</p>
+                    </div>
+                    <p className="hidden xl:block font-body text-xs text-text-muted truncate">{user.email}</p>
+                    <p className="hidden xl:block font-body text-xs text-text-muted">+{user.phone}</p>
+                    <p className="hidden xl:block font-heading text-sm font-extrabold text-text">{user.orderCount}</p>
+                    <p className="hidden xl:block font-body text-xs text-text-muted">
+                      {user.totalSpent > 0 ? formatPrice(user.totalSpent) : "—"}
+                    </p>
+                    <div className="hidden xl:block">
+                      <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider", tierCfg.classes)}>
+                        <span className="material-symbols-outlined icon-filled text-[11px]">{tierCfg.icon}</span>
+                        {tier}
+                      </span>
+                    </div>
+                    <p className="hidden xl:block font-body text-xs text-text-muted whitespace-nowrap">{formatDate(user.createdAt)}</p>
+                    <div className="hidden xl:block">
+                      <span className={cn(
+                        "px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider",
+                        user.status === "banned"
+                          ? "bg-error/10 text-error"
+                          : "bg-secondary/10 text-secondary"
+                      )}>
+                        {user.status}
+                      </span>
+                    </div>
+                    <div className="flex xl:hidden items-center gap-2 ml-auto shrink-0">
+                      <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider", tierCfg.classes)}>
+                        {tier}
+                      </span>
+                      <span className="material-symbols-outlined icon-outline text-[16px] text-text-muted">chevron_right</span>
+                    </div>
+                    <div className="hidden xl:flex justify-end">
+                      <span className="material-symbols-outlined icon-outline text-[16px] text-text-muted">chevron_right</span>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        )}
 
-                  {/* Name */}
-                  <div className="min-w-0">
-                    <p className="font-body text-sm font-semibold text-text truncate">{user.name}</p>
-                    <p className="font-body text-[10px] text-text-muted xl:hidden truncate">{user.email}</p>
-                  </div>
-
-                  {/* Email */}
-                  <p className="hidden xl:block font-body text-xs text-text-muted truncate">{user.email}</p>
-
-                  {/* Phone */}
-                  <p className="hidden xl:block font-body text-xs text-text-muted">+{user.phone}</p>
-
-                  {/* Orders */}
-                  <p className="hidden xl:block font-heading text-sm font-extrabold text-text">{user.orderCount}</p>
-
-                  {/* Spent */}
-                  <p className="hidden xl:block font-body text-xs text-text-muted">
-                    {user.totalSpent > 0 ? formatPrice(user.totalSpent) : "—"}
-                  </p>
-
-                  {/* Tier */}
-                  <div className="hidden xl:block">
-                    <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider", tierCfg.classes)}>
-                      <span className="material-symbols-outlined icon-filled text-[11px]">{tierCfg.icon}</span>
-                      {tier}
-                    </span>
-                  </div>
-
-                  {/* Joined */}
-                  <p className="hidden xl:block font-body text-xs text-text-muted whitespace-nowrap">{formatDate(user.joinedAt)}</p>
-
-                  {/* Status */}
-                  <div className="hidden xl:block">
-                    <span className={cn(
-                      "px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider",
-                      user.status === "banned"
-                        ? "bg-error/10 text-error"
-                        : "bg-secondary/10 text-secondary"
-                    )}>
-                      {user.status}
-                    </span>
-                  </div>
-
-                  {/* Mobile: tier + chevron */}
-                  <div className="flex xl:hidden items-center gap-2 ml-auto shrink-0">
-                    <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider", tierCfg.classes)}>
-                      {tier}
-                    </span>
-                    <span className="material-symbols-outlined icon-outline text-[16px] text-text-muted">chevron_right</span>
-                  </div>
-
-                  {/* Desktop: chevron */}
-                  <div className="hidden xl:flex justify-end">
-                    <span className="material-symbols-outlined icon-outline text-[16px] text-text-muted">chevron_right</span>
-                  </div>
-                </button>
-              );
-            })
-          )}
-        </div>
-
-        {filtered.length > 0 && (
-          <div className="px-5 py-3 border-t border-border bg-surface-elevated">
+        {!isLoading && total > 0 && (
+          <div className="px-5 py-3 border-t border-border bg-surface-elevated flex items-center justify-between">
             <p className="font-body text-[10px] text-text-muted">
-              Showing {filtered.length} of {users.length} customers
+              Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total} customers
             </p>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-3 py-1 font-body text-xs border border-border text-text-muted hover:text-text hover:border-outline transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Prev
+                </button>
+                <span className="font-body text-xs text-text-muted">{page} / {totalPages}</span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="px-3 py-1 font-body text-xs border border-border text-text-muted hover:text-text hover:border-outline transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
 
       {/* Customer panel */}
-      {selectedUser && (
+      {selectedUserId && (
         <UserPanel
-          user={selectedUser}
-          avatarColor={AVATAR_COLORS[selectedUserIndex % AVATAR_COLORS.length]}
-          onClose={() => setSelectedUser(null)}
-          onBan={toggleBan}
+          userId={selectedUserId}
+          avatarColor={avatarColor}
+          onClose={() => setSelectedUserId(null)}
         />
       )}
     </div>

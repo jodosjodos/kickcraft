@@ -7,6 +7,11 @@ export enum UserRole {
   User = 'user',
 }
 
+export enum UserStatus {
+  Active = 'active',
+  Banned = 'banned',
+}
+
 @Entity('users')
 export class User extends BaseEntity {
   @Column()
@@ -26,6 +31,9 @@ export class User extends BaseEntity {
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.User })
   role!: UserRole;
+
+  @Column({ type: 'enum', enum: UserStatus, default: UserStatus.Active })
+  status!: UserStatus;
 
   @Column({ default: false })
   isVerified!: boolean;
@@ -53,4 +61,7 @@ export class User extends BaseEntity {
   @Exclude()
   @Column({ type: 'timestamptz', nullable: true, default: null })
   passwordChangeTokenExpiresAt!: Date | null;
+
+  @Column({ type: 'text', nullable: true, default: null })
+  adminNotes!: string | null;
 }

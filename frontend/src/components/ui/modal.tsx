@@ -32,7 +32,7 @@ export function Modal({ open, onClose, title, className, children }: ModalProps)
         if (e.target === dialogRef.current) onClose();
       }}
       className={cn(
-        "rounded border border-border bg-surface text-text w-full max-w-lg p-0",
+        "m-auto rounded border border-border bg-surface text-text w-full max-w-lg p-0",
         "backdrop:bg-background/80 backdrop:backdrop-blur-sm",
         "open:flex open:flex-col",
         className
