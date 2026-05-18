@@ -1,25 +1,27 @@
 @import "tailwindcss";
 
-@theme {
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
   /* Typography */
   --font-heading: var(--font-epilogue), "Epilogue", sans-serif;
   --font-body: var(--font-inter), "Inter", sans-serif;
 
-  /* Colors — dark mode default */
-  --color-background: #0a0a0a;
-  --color-surface: #131313;
-  --color-surface-elevated: #1c1b1b;
-  --color-surface-high: #2a2a2a;
-  --color-text: #e5e2e1;
-  --color-text-muted: #a0a0a0;
-  --color-border: #333535;
-  --color-primary: #ff4500;
-  --color-primary-muted: #ffb5a0;
-  --color-primary-inverse: #b12d00;
-  --color-secondary: #41e575;
-  --color-error: #ffb4ab;
-  --color-outline: #ad887e;
-  --color-product-card: #f5f5f5;
+  /* Colors — reference runtime CSS vars */
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-high: var(--surface-high);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-muted: var(--primary-muted);
+  --color-primary-inverse: var(--primary-inverse);
+  --color-secondary: var(--secondary);
+  --color-error: var(--error);
+  --color-outline: var(--outline);
+  --color-product-card: var(--product-card);
 
   /* Border radius */
   --radius-sm: 0.125rem;
@@ -33,8 +35,42 @@
   --spacing-container: 1280px;
 }
 
-html {
+/* Light mode (default) */
+:root {
+  color-scheme: light;
+  --background: #ffffff;
+  --surface: #ffffff;
+  --surface-elevated: #f5f2f0;
+  --surface-high: #ede9e7;
+  --text: #1c1b1a;
+  --text-muted: #6b5552;
+  --border: #e5e0de;
+  --primary: #ff4500;
+  --primary-muted: #b12d00;
+  --primary-inverse: #ffb5a0;
+  --secondary: #006d30;
+  --error: #ba1a1a;
+  --outline: #857370;
+  --product-card: #f5f5f5;
+}
+
+/* Dark mode */
+.dark {
   color-scheme: dark;
+  --background: #0a0a0a;
+  --surface: #131313;
+  --surface-elevated: #1c1b1b;
+  --surface-high: #2a2a2a;
+  --text: #e5e2e1;
+  --text-muted: #a0a0a0;
+  --border: #333535;
+  --primary: #ff4500;
+  --primary-muted: #ffb5a0;
+  --primary-inverse: #b12d00;
+  --secondary: #41e575;
+  --error: #ffb4ab;
+  --outline: #ad887e;
+  --product-card: #f5f5f5;
 }
 
 body {

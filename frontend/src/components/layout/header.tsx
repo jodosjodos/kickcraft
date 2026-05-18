@@ -8,6 +8,7 @@ import { useLogout } from "@/hooks/api/use-auth";
 import { useCart } from "@/providers/cart-provider";
 import { useWishlist } from "@/providers/wishlist-provider";
 import { Icon } from "@/components/ui/icon";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -163,6 +164,8 @@ export function Header() {
                 </span>
               )}
             </Link>
+
+            <ThemeToggle className="p-2 active:scale-95" />
 
             {user ? (
               <div className="relative ml-1" ref={dropdownRef}>

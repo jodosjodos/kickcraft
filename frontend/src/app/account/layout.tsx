@@ -11,6 +11,7 @@ const navItems = [
   { label: "Orders", href: "/account/orders", icon: "receipt_long" },
   { label: "Profile", href: "/account/profile", icon: "person" },
   { label: "Security", href: "/account/security", icon: "shield" },
+  { label: "Appearance", href: "/account/appearance", icon: "palette" },
 ];
 
 function getInitials(name: string): string {

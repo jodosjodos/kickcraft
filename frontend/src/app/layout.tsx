@@ -5,6 +5,7 @@ import { QueryProvider } from "@/providers/query-provider";
 import { AuthProvider } from "@/providers/auth-provider";
 import { CartProvider } from "@/providers/cart-provider";
 import { WishlistProvider } from "@/providers/wishlist-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
 
 const epilogue = Epilogue({
   variable: "--font-epilogue",
@@ -36,7 +37,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${epilogue.variable} ${inter.variable} dark`}
+      className={`${epilogue.variable} ${inter.variable}`}
+      suppressHydrationWarning
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -51,13 +53,15 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen antialiased bg-background text-text font-body">
-        <QueryProvider>
-          <AuthProvider>
-            <CartProvider>
+        <ThemeProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <CartProvider>
                 <WishlistProvider>{children}</WishlistProvider>
               </CartProvider>
-          </AuthProvider>
-        </QueryProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
