@@ -1,42 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import {
+  useStoreSettings,
+  useUpdateStoreSettings,
+  useNotificationPrefs,
+  useUpdateNotificationPrefs,
+  useTeam,
+  useCreateAdmin,
+  useRemoveAdmin,
+  useSessions,
+  useRevokeSession,
+  useSetup2FA,
+  useEnable2FA,
+  useDisable2FA,
+  useChangePasswordDirect,
+} from "@/hooks/api/use-settings";
+import type { NotificationPrefsMap } from "@/types/api/settings";
+import type { ApiError } from "@/types/api/common";
 
 type SettingsTab = "general" | "team" | "notifications" | "security";
 
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  role: "super_admin" | "admin" | "manager" | "viewer";
-  initials: string;
-  color: string;
-  lastActive: string;
-  status: "active" | "pending";
-}
-
-const MOCK_TEAM: TeamMember[] = [
-  { id: "1", name: "Jean Admin", email: "admin@kickcraft.com", role: "super_admin", initials: "JA", color: "bg-primary/20 text-primary", lastActive: "Now", status: "active" },
-  { id: "2", name: "Marie Manager", email: "marie@kickcraft.com", role: "manager", initials: "MM", color: "bg-secondary/20 text-secondary", lastActive: "2h ago", status: "active" },
-  { id: "3", name: "Eric Viewer", email: "eric@kickcraft.com", role: "viewer", initials: "EV", color: "bg-[#ffb5a0]/20 text-[#ffb5a0]", lastActive: "1d ago", status: "active" },
-  { id: "4", name: "Pending User", email: "pending@kickcraft.com", role: "viewer", initials: "PU", color: "bg-surface-elevated text-text-muted", lastActive: "—", status: "pending" },
-];
-
-const ROLE_LABELS: Record<TeamMember["role"], string> = {
-  super_admin: "Super Admin",
-  admin: "Admin",
-  manager: "Manager",
-  viewer: "Viewer",
-};
-
-const SESSIONS = [
-  { device: "Chrome / macOS", location: "Kigali, Rwanda", lastActive: "Now (current)", current: true },
-  { device: "Safari / iPhone", location: "Kigali, Rwanda", lastActive: "3h ago", current: false },
-  { device: "Firefox / Windows", location: "Nairobi, Kenya", lastActive: "2d ago", current: false },
-];
-
-const NOTIFICATION_ITEMS = [
+const NOTIF_ITEMS = [
   { key: "new_order", label: "New Order", description: "When a customer places an order" },
   { key: "low_stock", label: "Low Stock Alert", description: "When a product drops below threshold" },
   { key: "new_review", label: "New Review", description: "When a customer submits a review" },
@@ -45,37 +31,160 @@ const NOTIFICATION_ITEMS = [
   { key: "return_request", label: "Return Request", description: "When a customer requests a return" },
 ];
 
+const TABS: { value: SettingsTab; label: string; icon: string }[] = [
+  { value: "general", label: "General", icon: "settings" },
+  { value: "team", label: "Team", icon: "group" },
+  { value: "notifications", label: "Notifications", icon: "notifications" },
+  { value: "security", label: "Security", icon: "shield" },
+];
+
+function initials(name: string): string {
+  return name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
+}
+
 export default function AdminSettingsPage() {
   const [tab, setTab] = useState<SettingsTab>("general");
-  const [team, setTeam] = useState(MOCK_TEAM);
-  const [showInvite, setShowInvite] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<TeamMember["role"]>("viewer");
-  const [notifications, setNotifications] = useState<Record<string, { email: boolean; inApp: boolean }>>(
-    Object.fromEntries(NOTIFICATION_ITEMS.map((n) => [n.key, { email: true, inApp: true }]))
-  );
-  const [twoFA, setTwoFA] = useState(false);
+
+  // ── General ──────────────────────────────────────────────────────────────
+  const { data: storeSettings } = useStoreSettings();
+  const updateStore = useUpdateStoreSettings();
   const [generalForm, setGeneralForm] = useState({
-    storeName: "KickCraft", email: "hello@kickcraft.com", phone: "+250 788 000 000",
-    timezone: "Africa/Kigali", currency: "RWF", language: "en",
+    storeName: "", storeEmail: "", phone: "", timezone: "Africa/Kigali", currency: "RWF", language: "en",
   });
+  const [storeSaved, setStoreSaved] = useState(false);
 
-  const TABS: { value: SettingsTab; label: string; icon: string }[] = [
-    { value: "general", label: "General", icon: "settings" },
-    { value: "team", label: "Team", icon: "group" },
-    { value: "notifications", label: "Notifications", icon: "notifications" },
-    { value: "security", label: "Security", icon: "shield" },
-  ];
+  useEffect(() => {
+    if (storeSettings) {
+      setGeneralForm({
+        storeName: storeSettings.storeName,
+        storeEmail: storeSettings.storeEmail,
+        phone: storeSettings.phone,
+        timezone: storeSettings.timezone,
+        currency: storeSettings.currency,
+        language: storeSettings.language,
+      });
+    }
+  }, [storeSettings]);
 
-  function toggleNotif(key: string, type: "email" | "inApp") {
-    setNotifications((prev) => ({
-      ...prev,
-      [key]: { ...prev[key], [type]: !prev[key][type] },
-    }));
+  async function handleSaveStore(e: React.FormEvent) {
+    e.preventDefault();
+    await updateStore.mutateAsync({
+      storeName: generalForm.storeName,
+      storeEmail: generalForm.storeEmail,
+      phone: generalForm.phone,
+      timezone: generalForm.timezone,
+      currency: generalForm.currency,
+      language: generalForm.language,
+    });
+    setStoreSaved(true);
+    setTimeout(() => setStoreSaved(false), 2000);
   }
 
-  function removeTeamMember(id: string) {
-    setTeam((prev) => prev.filter((m) => m.id !== id));
+  // ── Team ─────────────────────────────────────────────────────────────────
+  const { data: team = [] } = useTeam();
+  const createAdmin = useCreateAdmin();
+  const removeAdmin = useRemoveAdmin();
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ name: "", email: "", phone: "", password: "" });
+  const [inviteError, setInviteError] = useState<string | null>(null);
+
+  async function handleCreateAdmin(e: React.FormEvent) {
+    e.preventDefault();
+    setInviteError(null);
+    try {
+      await createAdmin.mutateAsync(inviteForm);
+      setShowInvite(false);
+      setInviteForm({ name: "", email: "", phone: "", password: "" });
+    } catch (err) {
+      setInviteError((err as ApiError)?.message ?? "Failed to create admin");
+    }
+  }
+
+  async function handleRemoveAdmin(id: string) {
+    if (!window.confirm("Remove this admin? They will lose access immediately.")) return;
+    await removeAdmin.mutateAsync(id);
+  }
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+  const { data: notifPrefs } = useNotificationPrefs();
+  const updateNotifPrefs = useUpdateNotificationPrefs();
+  const [localPrefs, setLocalPrefs] = useState<NotificationPrefsMap>({});
+
+  useEffect(() => {
+    if (notifPrefs) setLocalPrefs(notifPrefs.prefs);
+  }, [notifPrefs]);
+
+  async function toggleNotif(key: string, type: "email" | "inApp") {
+    const updated: NotificationPrefsMap = {
+      ...localPrefs,
+      [key]: { ...localPrefs[key], [type]: !localPrefs[key]?.[type] },
+    };
+    setLocalPrefs(updated);
+    await updateNotifPrefs.mutateAsync(updated);
+  }
+
+  // ── Security ─────────────────────────────────────────────────────────────
+  const { data: sessions = [] } = useSessions();
+  const revokeSession = useRevokeSession();
+  const changePassword = useChangePasswordDirect();
+  const setup2FA = useSetup2FA();
+  const enable2FA = useEnable2FA();
+  const disable2FA = useDisable2FA();
+
+  const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwSuccess, setPwSuccess] = useState(false);
+
+  const [qrData, setQrData] = useState<{ secret: string; qrDataUrl: string } | null>(null);
+  const [totpInput, setTotpInput] = useState("");
+  const [totpError, setTotpError] = useState<string | null>(null);
+  const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPwError(null);
+    if (pwForm.next !== pwForm.confirm) { setPwError("New passwords do not match"); return; }
+    if (pwForm.next.length < 8) { setPwError("Password must be at least 8 characters"); return; }
+    try {
+      await changePassword.mutateAsync({ currentPassword: pwForm.current, newPassword: pwForm.next });
+      setPwSuccess(true);
+      setPwForm({ current: "", next: "", confirm: "" });
+      setTimeout(() => setPwSuccess(false), 2000);
+    } catch (err) {
+      setPwError((err as ApiError)?.message ?? "Failed to update password");
+    }
+  }
+
+  async function handleSetup2FA() {
+    const data = await setup2FA.mutateAsync();
+    setQrData(data);
+    setTotpInput("");
+    setTotpError(null);
+  }
+
+  async function handleEnable2FA(e: React.FormEvent) {
+    e.preventDefault();
+    setTotpError(null);
+    try {
+      await enable2FA.mutateAsync(totpInput);
+      setTwoFAEnabled(true);
+      setQrData(null);
+      setTotpInput("");
+    } catch (err) {
+      setTotpError((err as ApiError)?.message ?? "Invalid token");
+    }
+  }
+
+  async function handleDisable2FA(e: React.FormEvent) {
+    e.preventDefault();
+    setTotpError(null);
+    try {
+      await disable2FA.mutateAsync(totpInput);
+      setTwoFAEnabled(false);
+      setTotpInput("");
+    } catch (err) {
+      setTotpError((err as ApiError)?.message ?? "Invalid token");
+    }
   }
 
   return (
@@ -104,130 +213,139 @@ export default function AdminSettingsPage() {
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* General */}
+
+          {/* ── General ── */}
           {tab === "general" && (
-            <div className="space-y-6">
-              <div className="border border-border bg-surface p-5">
-                <h2 className="font-heading text-sm font-extrabold uppercase tracking-tight text-text mb-4">Store Information</h2>
-                <div className="space-y-4">
+            <div className="border border-border bg-surface p-5">
+              <h2 className="font-heading text-sm font-extrabold uppercase tracking-tight text-text mb-4">Store Information</h2>
+              <form onSubmit={handleSaveStore} className="space-y-4">
+                {[
+                  { key: "storeName", label: "Store Name", type: "text" },
+                  { key: "storeEmail", label: "Store Email", type: "email" },
+                  { key: "phone", label: "Support Phone", type: "tel" },
+                ].map(({ key, label, type }) => (
+                  <div key={key}>
+                    <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">{label}</label>
+                    <input
+                      type={type}
+                      value={generalForm[key as keyof typeof generalForm]}
+                      onChange={(e) => setGeneralForm((f) => ({ ...f, [key]: e.target.value }))}
+                      className="w-full max-w-sm px-3 py-2 bg-background border border-border font-body text-sm text-text focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-colors"
+                    />
+                  </div>
+                ))}
+                <div className="grid grid-cols-3 gap-3 max-w-sm">
                   {[
-                    { key: "storeName", label: "Store Name", type: "text" },
-                    { key: "email", label: "Store Email", type: "email" },
-                    { key: "phone", label: "Support Phone", type: "tel" },
-                  ].map(({ key, label, type }) => (
+                    { key: "timezone", label: "Timezone", options: ["Africa/Kigali", "Africa/Nairobi", "UTC"] },
+                    { key: "currency", label: "Currency", options: ["RWF", "USD", "EUR"] },
+                    { key: "language", label: "Language", options: ["en", "fr", "rw"] },
+                  ].map(({ key, label, options }) => (
                     <div key={key}>
                       <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">{label}</label>
-                      <input type={type} value={generalForm[key as keyof typeof generalForm]}
+                      <select
+                        value={generalForm[key as keyof typeof generalForm]}
                         onChange={(e) => setGeneralForm((f) => ({ ...f, [key]: e.target.value }))}
-                        className="w-full max-w-sm px-3 py-2 bg-background border border-border font-body text-sm text-text focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-colors" />
+                        className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text focus:outline-none focus:border-primary transition-colors"
+                      >
+                        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+                      </select>
                     </div>
                   ))}
-                  <div className="grid grid-cols-3 gap-3 max-w-sm">
-                    <div>
-                      <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">Timezone</label>
-                      <select value={generalForm.timezone} onChange={(e) => setGeneralForm((f) => ({ ...f, timezone: e.target.value }))}
-                        className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text focus:outline-none focus:border-primary transition-colors">
-                        <option value="Africa/Kigali">Africa/Kigali</option>
-                        <option value="Africa/Nairobi">Africa/Nairobi</option>
-                        <option value="UTC">UTC</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">Currency</label>
-                      <select value={generalForm.currency} onChange={(e) => setGeneralForm((f) => ({ ...f, currency: e.target.value }))}
-                        className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text focus:outline-none focus:border-primary transition-colors">
-                        <option value="RWF">RWF</option>
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">Language</label>
-                      <select value={generalForm.language} onChange={(e) => setGeneralForm((f) => ({ ...f, language: e.target.value }))}
-                        className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text focus:outline-none focus:border-primary transition-colors">
-                        <option value="en">English</option>
-                        <option value="fr">Français</option>
-                        <option value="rw">Kinyarwanda</option>
-                      </select>
-                    </div>
-                  </div>
                 </div>
-                <div className="mt-5 pt-4 border-t border-border flex justify-end">
-                  <button className="bg-primary text-white px-4 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors">
-                    Save Changes
+                <div className="pt-4 border-t border-border flex items-center gap-3">
+                  <button
+                    type="submit"
+                    disabled={updateStore.isPending}
+                    className="bg-primary text-white px-4 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors disabled:opacity-50"
+                  >
+                    {updateStore.isPending ? "Saving…" : "Save Changes"}
                   </button>
+                  {storeSaved && <span className="font-body text-xs text-secondary">Saved</span>}
                 </div>
-              </div>
+              </form>
             </div>
           )}
 
-          {/* Team */}
+          {/* ── Team ── */}
           {tab === "team" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="font-body text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">
-                  {team.length} member{team.length !== 1 ? "s" : ""}
+                  {team.length} admin{team.length !== 1 ? "s" : ""}
                 </p>
                 <button onClick={() => setShowInvite(true)}
                   className="flex items-center gap-1.5 bg-primary text-white px-3.5 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors">
                   <span className="material-symbols-outlined icon-outline text-[15px]">person_add</span>
-                  Invite Member
+                  Add Admin
                 </button>
               </div>
 
               {showInvite && (
-                <div className="border border-primary/30 bg-primary/5 p-4 space-y-3">
-                  <p className="font-body text-xs font-semibold text-text">Invite a new team member</p>
+                <form onSubmit={handleCreateAdmin} className="border border-primary/30 bg-primary/5 p-4 space-y-3">
+                  <p className="font-body text-xs font-semibold text-text">Add new admin account</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { key: "name", placeholder: "Full name", type: "text" },
+                      { key: "email", placeholder: "Email", type: "email" },
+                      { key: "phone", placeholder: "Phone (+250…)", type: "tel" },
+                      { key: "password", placeholder: "Temp password (min 8 chars)", type: "password" },
+                    ].map(({ key, placeholder, type }) => (
+                      <input
+                        key={key}
+                        type={type}
+                        placeholder={placeholder}
+                        value={inviteForm[key as keyof typeof inviteForm]}
+                        onChange={(e) => setInviteForm((f) => ({ ...f, [key]: e.target.value }))}
+                        className="px-3 py-2 bg-background border border-border font-body text-sm text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary transition-colors"
+                      />
+                    ))}
+                  </div>
+                  {inviteError && <p className="font-body text-xs text-error">{inviteError}</p>}
                   <div className="flex gap-2">
-                    <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Email address"
-                      className="flex-1 px-3 py-2 bg-background border border-border font-body text-sm text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary transition-colors" />
-                    <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as TeamMember["role"])}
-                      className="px-3 py-2 bg-background border border-border font-body text-sm text-text focus:outline-none focus:border-primary transition-colors">
-                      <option value="admin">Admin</option>
-                      <option value="manager">Manager</option>
-                      <option value="viewer">Viewer</option>
-                    </select>
-                    <button onClick={() => { setShowInvite(false); setInviteEmail(""); }}
-                      className="bg-primary text-white px-3.5 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors">
-                      Send
+                    <button
+                      type="submit"
+                      disabled={createAdmin.isPending}
+                      className="bg-primary text-white px-3.5 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors disabled:opacity-50"
+                    >
+                      {createAdmin.isPending ? "Creating…" : "Create"}
                     </button>
-                    <button onClick={() => setShowInvite(false)} className="px-3 py-2 border border-border text-text-muted hover:text-text transition-colors">
+                    <button type="button" onClick={() => setShowInvite(false)} className="px-3 py-2 border border-border text-text-muted hover:text-text transition-colors">
                       <span className="material-symbols-outlined icon-outline text-[16px]">close</span>
                     </button>
                   </div>
-                </div>
+                </form>
               )}
 
               <div className="border border-border bg-surface">
-                <div className="hidden md:grid grid-cols-[1fr_120px_80px_80px_60px] gap-4 px-5 py-2.5 border-b border-border bg-surface-elevated">
-                  {["Member", "Role", "Status", "Last Active", ""].map((h) => (
+                <div className="hidden md:grid grid-cols-[1fr_120px_120px_60px] gap-4 px-5 py-2.5 border-b border-border bg-surface-elevated">
+                  {["Member", "Role", "Joined", ""].map((h) => (
                     <p key={h} className="font-body text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted">{h}</p>
                   ))}
                 </div>
                 <div className="divide-y divide-border">
                   {team.map((m) => (
-                    <div key={m.id} className="flex md:grid md:grid-cols-[1fr_120px_80px_80px_60px] gap-4 items-center px-5 py-3.5">
+                    <div key={m.id} className="flex md:grid md:grid-cols-[1fr_120px_120px_60px] gap-4 items-center px-5 py-3.5">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className={cn("w-8 h-8 flex items-center justify-center font-heading text-xs font-extrabold shrink-0", m.color)}>
-                          {m.initials}
+                        <div className="w-8 h-8 flex items-center justify-center font-heading text-xs font-extrabold shrink-0 bg-primary/20 text-primary">
+                          {initials(m.name)}
                         </div>
                         <div className="min-w-0">
                           <p className="font-body text-sm font-semibold text-text truncate">{m.name}</p>
                           <p className="font-body text-[10px] text-text-muted truncate">{m.email}</p>
                         </div>
                       </div>
-                      <p className="hidden md:block font-body text-xs text-text-muted">{ROLE_LABELS[m.role]}</p>
-                      <div className="hidden md:block">
-                        <span className={cn("px-2 py-0.5 font-body text-[10px] font-bold uppercase",
-                          m.status === "active" ? "text-secondary bg-secondary/10" : "text-text-muted bg-surface-elevated"
-                        )}>
-                          {m.status}
-                        </span>
-                      </div>
-                      <p className="hidden md:block font-body text-[10px] text-text-muted">{m.lastActive}</p>
+                      <p className="hidden md:block font-body text-xs text-text-muted">Admin</p>
+                      <p className="hidden md:block font-body text-[10px] text-text-muted">
+                        {new Date(m.createdAt).toLocaleDateString("en-RW", { month: "short", day: "numeric", year: "numeric" })}
+                      </p>
                       <div className="flex items-center gap-1 ml-auto md:ml-0">
-                        {m.role !== "super_admin" && (
-                          <button onClick={() => removeTeamMember(m.id)} className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 transition-colors" title="Remove">
+                        {(
+                          <button
+                            onClick={() => void handleRemoveAdmin(m.id)}
+                            disabled={removeAdmin.isPending}
+                            className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 transition-colors disabled:opacity-50"
+                            title="Remove admin"
+                          >
                             <span className="material-symbols-outlined icon-outline text-[15px]">person_remove</span>
                           </button>
                         )}
@@ -239,7 +357,7 @@ export default function AdminSettingsPage() {
             </div>
           )}
 
-          {/* Notifications */}
+          {/* ── Notifications ── */}
           {tab === "notifications" && (
             <div className="border border-border bg-surface">
               <div className="grid grid-cols-[1fr_60px_60px] gap-4 px-5 py-2.5 border-b border-border bg-surface-elevated">
@@ -248,8 +366,8 @@ export default function AdminSettingsPage() {
                 <p className="font-body text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted text-center">In-App</p>
               </div>
               <div className="divide-y divide-border">
-                {NOTIFICATION_ITEMS.map((item) => {
-                  const state = notifications[item.key];
+                {NOTIF_ITEMS.map((item) => {
+                  const pref = localPrefs[item.key] ?? { email: false, inApp: false };
                   return (
                     <div key={item.key} className="grid grid-cols-[1fr_60px_60px] gap-4 items-center px-5 py-4">
                       <div>
@@ -259,16 +377,12 @@ export default function AdminSettingsPage() {
                       {(["email", "inApp"] as const).map((type) => (
                         <div key={type} className="flex justify-center">
                           <button
-                            onClick={() => toggleNotif(item.key, type)}
-                            className={cn("w-9 h-5 relative transition-colors duration-200",
-                              state[type] ? "bg-primary" : "bg-surface-elevated"
-                            )}
+                            onClick={() => void toggleNotif(item.key, type)}
+                            className={cn("w-9 h-5 relative transition-colors duration-200", pref[type] ? "bg-primary" : "bg-surface-elevated")}
                             role="switch"
-                            aria-checked={state[type]}
+                            aria-checked={pref[type]}
                           >
-                            <span className={cn("absolute top-0.5 w-4 h-4 bg-white transition-all duration-200",
-                              state[type] ? "left-[calc(100%-18px)]" : "left-0.5"
-                            )} />
+                            <span className={cn("absolute top-0.5 w-4 h-4 bg-white transition-all duration-200", pref[type] ? "left-[calc(100%-18px)]" : "left-0.5")} />
                           </button>
                         </div>
                       ))}
@@ -279,24 +393,39 @@ export default function AdminSettingsPage() {
             </div>
           )}
 
-          {/* Security */}
+          {/* ── Security ── */}
           {tab === "security" && (
             <div className="space-y-5">
               {/* Change password */}
               <div className="border border-border bg-surface p-5">
                 <h2 className="font-heading text-sm font-extrabold uppercase tracking-tight text-text mb-4">Change Password</h2>
-                <div className="space-y-3 max-w-sm">
-                  {["Current Password", "New Password", "Confirm New Password"].map((label) => (
-                    <div key={label}>
+                <form onSubmit={handleChangePassword} className="space-y-3 max-w-sm">
+                  {[
+                    { key: "current", label: "Current Password" },
+                    { key: "next", label: "New Password" },
+                    { key: "confirm", label: "Confirm New Password" },
+                  ].map(({ key, label }) => (
+                    <div key={key}>
                       <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">{label}</label>
-                      <input type="password" placeholder="••••••••"
-                        className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-colors" />
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        value={pwForm[key as keyof typeof pwForm]}
+                        onChange={(e) => setPwForm((f) => ({ ...f, [key]: e.target.value }))}
+                        className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-colors"
+                      />
                     </div>
                   ))}
-                  <button className="bg-primary text-white px-4 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors mt-1">
-                    Update Password
+                  {pwError && <p className="font-body text-xs text-error">{pwError}</p>}
+                  {pwSuccess && <p className="font-body text-xs text-secondary">Password updated</p>}
+                  <button
+                    type="submit"
+                    disabled={changePassword.isPending}
+                    className="bg-primary text-white px-4 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors disabled:opacity-50 mt-1"
+                  >
+                    {changePassword.isPending ? "Updating…" : "Update Password"}
                   </button>
-                </div>
+                </form>
               </div>
 
               {/* 2FA */}
@@ -304,19 +433,72 @@ export default function AdminSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="font-heading text-sm font-extrabold uppercase tracking-tight text-text">Two-Factor Authentication</h2>
-                    <p className="font-body text-xs text-text-muted mt-0.5">Add an extra layer of security to your account</p>
+                    <p className="font-body text-xs text-text-muted mt-0.5">Add an extra layer of security via authenticator app</p>
                   </div>
                   <button
-                    onClick={() => setTwoFA((v) => !v)}
-                    className={cn("w-11 h-6 relative transition-colors duration-200", twoFA ? "bg-primary" : "bg-surface-elevated")}
-                    role="switch" aria-checked={twoFA}
+                    onClick={twoFAEnabled ? undefined : () => void handleSetup2FA()}
+                    disabled={setup2FA.isPending}
+                    className={cn(
+                      "w-11 h-6 relative transition-colors duration-200 disabled:opacity-50",
+                      twoFAEnabled ? "bg-primary" : "bg-surface-elevated",
+                    )}
+                    role="switch"
+                    aria-checked={twoFAEnabled}
                   >
-                    <span className={cn("absolute top-0.5 w-5 h-5 bg-white transition-all duration-200", twoFA ? "left-[calc(100%-22px)]" : "left-0.5")} />
+                    <span className={cn("absolute top-0.5 w-5 h-5 bg-white transition-all duration-200", twoFAEnabled ? "left-[calc(100%-22px)]" : "left-0.5")} />
                   </button>
                 </div>
-                {twoFA && (
-                  <div className="mt-4 p-3 bg-secondary/5 border border-secondary/20">
-                    <p className="font-body text-xs text-secondary font-semibold">2FA enabled — scan QR code in your authenticator app to complete setup</p>
+
+                {/* QR setup flow */}
+                {qrData && !twoFAEnabled && (
+                  <div className="mt-4 space-y-3">
+                    <p className="font-body text-xs text-text-muted">Scan this QR code in your authenticator app, then enter the 6-digit code to confirm.</p>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={qrData.qrDataUrl} alt="2FA QR code" className="w-40 h-40 bg-white p-1" />
+                    <p className="font-body text-[10px] font-mono text-text-muted break-all">Manual: {qrData.secret}</p>
+                    <form onSubmit={handleEnable2FA} className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="6-digit code"
+                        maxLength={6}
+                        value={totpInput}
+                        onChange={(e) => setTotpInput(e.target.value)}
+                        className="w-36 px-3 py-2 bg-background border border-border font-body text-sm text-text focus:outline-none focus:border-primary transition-colors"
+                      />
+                      <button
+                        type="submit"
+                        disabled={enable2FA.isPending}
+                        className="bg-primary text-white px-3 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors disabled:opacity-50"
+                      >
+                        {enable2FA.isPending ? "Verifying…" : "Enable"}
+                      </button>
+                    </form>
+                    {totpError && <p className="font-body text-xs text-error">{totpError}</p>}
+                  </div>
+                )}
+
+                {/* Disable flow */}
+                {twoFAEnabled && (
+                  <div className="mt-4 space-y-3">
+                    <p className="font-body text-xs text-secondary font-semibold">2FA is active</p>
+                    <form onSubmit={handleDisable2FA} className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Enter code to disable"
+                        maxLength={6}
+                        value={totpInput}
+                        onChange={(e) => setTotpInput(e.target.value)}
+                        className="w-40 px-3 py-2 bg-background border border-border font-body text-sm text-text focus:outline-none focus:border-primary transition-colors"
+                      />
+                      <button
+                        type="submit"
+                        disabled={disable2FA.isPending}
+                        className="px-3 py-2 border border-error/40 font-body text-xs font-semibold text-error hover:bg-error/10 transition-colors disabled:opacity-50"
+                      >
+                        {disable2FA.isPending ? "Disabling…" : "Disable 2FA"}
+                      </button>
+                    </form>
+                    {totpError && <p className="font-body text-xs text-error">{totpError}</p>}
                   </div>
                 )}
               </div>
@@ -327,30 +509,45 @@ export default function AdminSettingsPage() {
                   <h2 className="font-heading text-sm font-extrabold uppercase tracking-tight text-text">Active Sessions</h2>
                 </div>
                 <div className="divide-y divide-border">
-                  {SESSIONS.map((s, i) => (
-                    <div key={i} className="flex items-center justify-between gap-4 px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined icon-outline text-[20px] text-text-muted">
-                          {s.device.includes("iPhone") ? "smartphone" : "laptop_mac"}
-                        </span>
-                        <div>
-                          <p className="font-body text-sm font-semibold text-text">{s.device}</p>
-                          <p className="font-body text-[10px] text-text-muted">{s.location} · {s.lastActive}</p>
+                  {sessions.length === 0 && (
+                    <div className="px-5 py-6 text-center">
+                      <p className="font-body text-sm text-text-muted">No active sessions found</p>
+                    </div>
+                  )}
+                  {sessions.map((s) => {
+                    const ua = s.userAgent ?? "Unknown device";
+                    const isMobile = ua.toLowerCase().includes("iphone") || ua.toLowerCase().includes("android");
+                    return (
+                      <div key={s.id} className="flex items-center justify-between gap-4 px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <span className="material-symbols-outlined icon-outline text-[20px] text-text-muted">
+                            {isMobile ? "smartphone" : "laptop_mac"}
+                          </span>
+                          <div>
+                            <p className="font-body text-sm font-semibold text-text">{ua.slice(0, 60)}</p>
+                            <p className="font-body text-[10px] text-text-muted">
+                              {s.ip ?? "—"} ·{" "}
+                              {s.lastSeenAt
+                                ? new Date(s.lastSeenAt).toLocaleString("en-RW", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                                : "Never"}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      {s.current ? (
-                        <span className="px-2 py-0.5 bg-secondary/10 font-body text-[10px] font-bold uppercase tracking-wider text-secondary">Current</span>
-                      ) : (
-                        <button className="px-3 py-1.5 border border-error/40 font-body text-[10px] font-semibold uppercase tracking-wider text-error hover:bg-error/10 transition-colors">
+                        <button
+                          onClick={() => void revokeSession.mutateAsync(s.id)}
+                          disabled={revokeSession.isPending}
+                          className="px-3 py-1.5 border border-error/40 font-body text-[10px] font-semibold uppercase tracking-wider text-error hover:bg-error/10 transition-colors disabled:opacity-50"
+                        >
                           Revoke
                         </button>
-                      )}
-                    </div>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           )}
+
         </div>
       </div>
     </div>

@@ -12,6 +12,8 @@ import { DeliveryAgentsModule } from './modules/delivery-agents/delivery-agents.
 import { DiscountsModule } from './modules/discounts/discounts.module';
 import { MailModule } from './modules/mail/mail.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
+import { SettingsModule } from './modules/settings/settings.module';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     DeliveryAgentsModule,
     DiscountsModule,
     AnalyticsModule,
+    InventoryModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}

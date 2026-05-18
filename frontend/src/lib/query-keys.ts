@@ -48,4 +48,7 @@ export const queryKeys = {
     orders: (period: AnalyticsPeriod) => ["analytics", "orders", period] as const,
     customers: () => ["analytics", "customers"] as const,
   },
+  inventory: {
+    all: ["inventory"] as const,
+  },
 };

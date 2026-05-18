@@ -19,6 +19,7 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { UpdatePaymentPhaseDto } from './dto/update-payment-phase.dto';
 import { DiscountsService } from '../discounts/discounts.service';
 import { DeliveryAgent } from '../delivery-agents/delivery-agent.entity';
+import { Sku } from '../inventory/sku.entity';
 import { MailService } from '../mail/mail.service';
 
 const DELIVERY_FEE = 2000;
@@ -46,6 +47,8 @@ export class OrdersService {
     private readonly productRepo: Repository<Product>,
     @InjectRepository(DeliveryAgent)
     private readonly agentRepo: Repository<DeliveryAgent>,
+    @InjectRepository(Sku)
+    private readonly skuRepo: Repository<Sku>,
     private readonly dataSource: DataSource,
     private readonly discountsService: DiscountsService,
     private readonly mailService: MailService,
@@ -65,19 +68,23 @@ export class OrdersService {
         if (!product) {
           throw new NotFoundException(`Product ${input.productId} not found`);
         }
-        if (product.stock < input.quantity) {
+
+        const sku = await manager.findOne(Sku, {
+          where: { productId: input.productId, size: input.size },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (!sku) {
           throw new BadRequestException(
-            `Insufficient stock for "${product.name}"`,
+            `No inventory SKU configured for "${product.name}" size ${input.size}. Contact admin.`,
+          );
+        }
+        if (sku.stock < input.quantity) {
+          throw new BadRequestException(
+            `Insufficient stock for "${product.name}" size ${input.size}`,
           );
         }
 
-        // Atomic stock decrement
-        await manager.decrement(
-          Product,
-          { id: product.id },
-          'stock',
-          input.quantity,
-        );
+        await manager.decrement(Sku, { id: sku.id }, 'stock', input.quantity);
 
         const linePrice = product.price * input.quantity;
         subtotal += linePrice;
@@ -206,14 +213,14 @@ export class OrdersService {
     });
     if (!order) throw new NotFoundException('Order not found');
 
-    // Restore stock when cancelling a non-already-cancelled order
+    // Restore SKU stock when cancelling a non-already-cancelled order
     if (
       dto.status === OrderStatus.Cancelled &&
       order.status !== OrderStatus.Cancelled
     ) {
       for (const item of order.items) {
-        await this.productRepo.increment(
-          { id: item.productId },
+        await this.skuRepo.increment(
+          { productId: item.productId, size: item.size },
           'stock',
           item.quantity,
         );

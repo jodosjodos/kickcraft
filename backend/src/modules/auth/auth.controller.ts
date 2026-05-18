@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Patch,
   Post,
   Req,
@@ -21,6 +23,8 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ConfirmPasswordChangeDto } from './dto/confirm-password-change.dto';
+import { ChangePasswordDirectDto } from './dto/change-password-direct.dto';
+import { VerifyTotpDto } from './dto/verify-totp.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { RequestUser } from './strategies/jwt.strategy';
 
@@ -46,9 +50,14 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() dto: LoginDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { user, token } = await this.authService.login(dto);
+    const { user, token } = await this.authService.login(
+      dto,
+      req.headers['user-agent'],
+      req.ip,
+    );
     const maxAge = this.config.getOrThrow<number>('JWT_EXPIRES_IN');
     res.cookie('access_token', token, {
       httpOnly: true,
@@ -61,7 +70,12 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  logout(@Res({ passthrough: true }) res: Response) {
+  @UseGuards(JwtAuthGuard)
+  async logout(
+    @Req() req: Request & { user: RequestUser },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.authService.logout(req.user.jti);
     res.clearCookie('access_token', {
       httpOnly: true,
       sameSite: 'lax',
@@ -112,5 +126,57 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   confirmPasswordChange(@Body() dto: ConfirmPasswordChangeDto) {
     return this.authService.confirmPasswordChange(dto);
+  }
+
+  @Post('change-password-direct')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  changePasswordDirect(
+    @Req() req: Request & { user: RequestUser },
+    @Body() dto: ChangePasswordDirectDto,
+  ) {
+    return this.authService.changePasswordDirect(req.user.id, dto);
+  }
+
+  @Get('sessions')
+  @UseGuards(JwtAuthGuard)
+  getSessions(@Req() req: Request & { user: RequestUser }) {
+    return this.authService.getSessions(req.user.id);
+  }
+
+  @Delete('sessions/:sessionId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard)
+  revokeSession(
+    @Req() req: Request & { user: RequestUser },
+    @Param('sessionId') sessionId: string,
+  ) {
+    return this.authService.revokeSession(req.user.id, sessionId);
+  }
+
+  @Get('2fa/setup')
+  @UseGuards(JwtAuthGuard)
+  setup2FA(@Req() req: Request & { user: RequestUser }) {
+    return this.authService.setup2FA(req.user.id);
+  }
+
+  @Post('2fa/enable')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  enable2FA(
+    @Req() req: Request & { user: RequestUser },
+    @Body() dto: VerifyTotpDto,
+  ) {
+    return this.authService.enable2FA(req.user.id, dto);
+  }
+
+  @Post('2fa/disable')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  disable2FA(
+    @Req() req: Request & { user: RequestUser },
+    @Body() dto: VerifyTotpDto,
+  ) {
+    return this.authService.disable2FA(req.user.id, dto);
   }
 }

@@ -10,6 +10,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
+import { generateSecret, generateURI, verifySync } from 'otplib';
+import * as QRCode from 'qrcode';
 import { UsersService } from '../users/users.service';
 import { MailService } from '../mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
@@ -21,13 +23,18 @@ import { UserStatus } from '../users/user.entity';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ConfirmPasswordChangeDto } from './dto/confirm-password-change.dto';
+import { ChangePasswordDirectDto } from './dto/change-password-direct.dto';
+import { VerifyTotpDto } from './dto/verify-totp.dto';
 import { User } from '../users/user.entity';
+import { Session } from './session.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Session)
+    private readonly sessionRepo: Repository<Session>,
     private readonly usersService: UsersService,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
@@ -75,7 +82,11 @@ export class AuthService {
     return { message: 'Email verified' };
   }
 
-  async login(dto: LoginDto): Promise<{ user: User; token: string }> {
+  async login(
+    dto: LoginDto,
+    userAgent?: string,
+    ip?: string,
+  ): Promise<{ user: User; token: string }> {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
@@ -90,6 +101,16 @@ export class AuthService {
     if (user.status === UserStatus.Banned)
       throw new UnauthorizedException('Your account has been suspended.');
 
+    const session = await this.sessionRepo.save(
+      this.sessionRepo.create({
+        userId: user.id,
+        userAgent: userAgent ?? null,
+        ip: ip ?? null,
+        lastSeenAt: new Date(),
+        isActive: true,
+      }),
+    );
+
     const expiresIn = this.config.getOrThrow<number>('JWT_EXPIRES_IN');
     const token = this.jwtService.sign(
       {
@@ -97,12 +118,31 @@ export class AuthService {
         email: user.email,
         role: user.role,
         name: user.name,
+        jti: session.id,
         ...(user.phone && { phone: user.phone }),
       },
       { expiresIn },
     );
 
     return { user, token };
+  }
+
+  async logout(sessionId: string): Promise<void> {
+    await this.sessionRepo.update({ id: sessionId }, { isActive: false });
+  }
+
+  async getSessions(userId: string): Promise<Session[]> {
+    return this.sessionRepo.find({
+      where: { userId, isActive: true },
+      order: { lastSeenAt: 'DESC' },
+    });
+  }
+
+  async revokeSession(userId: string, sessionId: string): Promise<void> {
+    await this.sessionRepo.update(
+      { id: sessionId, userId },
+      { isActive: false },
+    );
   }
 
   async getMe(userId: string): Promise<User> {
@@ -229,5 +269,89 @@ export class AuthService {
     );
 
     return { message: 'Password updated successfully' };
+  }
+
+  async changePasswordDirect(
+    userId: string,
+    dto: ChangePasswordDirectDto,
+  ): Promise<{ message: string }> {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('User not found');
+
+    const match = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!match)
+      throw new UnauthorizedException('Current password is incorrect');
+
+    user.passwordHash = await bcrypt.hash(dto.newPassword, 12);
+    await this.userRepo.save(user);
+
+    return { message: 'Password updated' };
+  }
+
+  async setup2FA(
+    userId: string,
+  ): Promise<{ secret: string; qrDataUrl: string }> {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('User not found');
+
+    const secret = generateSecret();
+    const otpauthUrl = generateURI({
+      label: user.email,
+      issuer: 'KickCraft',
+      secret,
+    });
+    const qrDataUrl = await QRCode.toDataURL(otpauthUrl);
+
+    user.twoFactorSecret = secret;
+    await this.userRepo.save(user);
+
+    return { secret, qrDataUrl };
+  }
+
+  async enable2FA(
+    userId: string,
+    dto: VerifyTotpDto,
+  ): Promise<{ message: string }> {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('User not found');
+    if (!user.twoFactorSecret)
+      throw new BadRequestException(
+        '2FA setup not initiated. Call /auth/2fa/setup first.',
+      );
+
+    const result = verifySync({
+      token: dto.token,
+      secret: user.twoFactorSecret,
+    });
+    if (!result.valid) throw new BadRequestException('Invalid TOTP token');
+
+    user.twoFactorEnabled = true;
+    await this.userRepo.save(user);
+
+    return { message: '2FA enabled' };
+  }
+
+  async disable2FA(
+    userId: string,
+    dto: VerifyTotpDto,
+  ): Promise<{ message: string }> {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException('User not found');
+    if (!user.twoFactorEnabled)
+      throw new BadRequestException('2FA is not enabled');
+    if (!user.twoFactorSecret)
+      throw new BadRequestException('2FA not configured');
+
+    const result = verifySync({
+      token: dto.token,
+      secret: user.twoFactorSecret,
+    });
+    if (!result.valid) throw new BadRequestException('Invalid TOTP token');
+
+    user.twoFactorEnabled = false;
+    user.twoFactorSecret = null;
+    await this.userRepo.save(user);
+
+    return { message: '2FA disabled' };
   }
 }

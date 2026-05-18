@@ -2,44 +2,12 @@
 
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { useSkus, useUpdateSku, useCreateSku, useDeleteSku } from "@/hooks/api/use-inventory";
+import { useProducts } from "@/hooks/api/use-products";
+import type { StockStatus, Sku } from "@/types/api/inventory";
+import type { ApiError } from "@/types/api/common";
 
-type StockStatus = "in_stock" | "low_stock" | "out_of_stock";
 type InventoryTab = "all" | "low" | "out";
-
-interface InventoryItem {
-  id: string;
-  name: string;
-  brand: string;
-  sku: string;
-  size: string;
-  color: string;
-  current: number;
-  reserved: number;
-  threshold: number;
-  lastRestocked: string;
-  supplier: string;
-}
-
-const MOCK_INVENTORY: InventoryItem[] = [
-  { id: "1", name: "Air Max Pulse", brand: "Nike", sku: "NK-AMP-001-42-BLK", size: "42", color: "Black", current: 18, reserved: 3, threshold: 5, lastRestocked: "2025-04-10", supplier: "Nike RW" },
-  { id: "2", name: "Air Max Pulse", brand: "Nike", sku: "NK-AMP-001-41-WHT", size: "41", color: "White", current: 2, reserved: 1, threshold: 5, lastRestocked: "2025-03-28", supplier: "Nike RW" },
-  { id: "3", name: "Yeezy Slide", brand: "Adidas", sku: "AD-YZS-002-40-GRY", size: "40", color: "Grey", current: 0, reserved: 0, threshold: 3, lastRestocked: "2025-02-15", supplier: "Adidas EA" },
-  { id: "4", name: "Yeezy Slide", brand: "Adidas", sku: "AD-YZS-002-42-BLK", size: "42", color: "Black", current: 7, reserved: 2, threshold: 3, lastRestocked: "2025-04-20", supplier: "Adidas EA" },
-  { id: "5", name: "Jordan 1 Retro High", brand: "Jordan", sku: "JD-J1H-003-43-RED", size: "43", color: "Red", current: 3, reserved: 2, threshold: 4, lastRestocked: "2025-03-05", supplier: "Jordan Brand" },
-  { id: "6", name: "Jordan 1 Retro High", brand: "Jordan", sku: "JD-J1H-003-44-BLK", size: "44", color: "Black", current: 11, reserved: 1, threshold: 4, lastRestocked: "2025-04-18", supplier: "Jordan Brand" },
-  { id: "7", name: "New Balance 990v6", brand: "New Balance", sku: "NB-990-004-41-GRY", size: "41", color: "Grey", current: 0, reserved: 0, threshold: 3, lastRestocked: "2025-01-20", supplier: "NB Africa" },
-  { id: "8", name: "Vans Old Skool", brand: "Vans", sku: "VN-OSK-005-39-BLK", size: "39", color: "Black", current: 24, reserved: 4, threshold: 5, lastRestocked: "2025-04-25", supplier: "Vans EMEA" },
-  { id: "9", name: "Vans Old Skool", brand: "Vans", sku: "VN-OSK-005-38-WHT", size: "38", color: "White", current: 1, reserved: 0, threshold: 5, lastRestocked: "2025-02-28", supplier: "Vans EMEA" },
-  { id: "10", name: "Converse Chuck 70", brand: "Converse", sku: "CV-C70-006-40-BLK", size: "40", color: "Black", current: 9, reserved: 2, threshold: 3, lastRestocked: "2025-04-12", supplier: "Converse KE" },
-  { id: "11", name: "Puma RS-X", brand: "Puma", sku: "PM-RSX-007-42-BLU", size: "42", color: "Blue", current: 0, reserved: 0, threshold: 4, lastRestocked: "2025-03-01", supplier: "Puma EA" },
-  { id: "12", name: "Puma RS-X", brand: "Puma", sku: "PM-RSX-007-41-RED", size: "41", color: "Red", current: 4, reserved: 1, threshold: 4, lastRestocked: "2025-04-08", supplier: "Puma EA" },
-];
-
-function getStatus(item: InventoryItem): StockStatus {
-  if (item.current === 0) return "out_of_stock";
-  if (item.current <= item.threshold) return "low_stock";
-  return "in_stock";
-}
 
 const STATUS_CONFIG: Record<StockStatus, { label: string; classes: string }> = {
   in_stock: { label: "In Stock", classes: "text-secondary bg-secondary/10" },
@@ -47,47 +15,244 @@ const STATUS_CONFIG: Record<StockStatus, { label: string; classes: string }> = {
   out_of_stock: { label: "Out of Stock", classes: "text-error bg-error/10" },
 };
 
+function skuCode(sku: Sku): string {
+  const brand = sku.productBrand.slice(0, 2).toUpperCase();
+  const color = sku.color ? `-${sku.color.slice(0, 3).toUpperCase()}` : "";
+  return `${brand}-${sku.size}${color}`;
+}
+
+interface CreateSkuFormProps {
+  productOptions: { id: string; name: string; brand: string }[];
+  onClose: () => void;
+}
+
+function CreateSkuForm({ productOptions, onClose }: CreateSkuFormProps) {
+  const createSku = useCreateSku();
+  const [form, setForm] = useState({
+    productId: "",
+    size: "",
+    color: "",
+    stock: "0",
+    threshold: "5",
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  function set(key: string, value: string) {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!form.productId || !form.size) {
+      setError("Product and size are required.");
+      return;
+    }
+    try {
+      await createSku.mutateAsync({
+        productId: form.productId,
+        size: form.size,
+        color: form.color || undefined,
+        stock: parseInt(form.stock, 10) || 0,
+        threshold: parseInt(form.threshold, 10) || 5,
+      });
+      onClose();
+    } catch (err) {
+      const apiErr = err as ApiError;
+      setError(apiErr?.message ?? "Failed to create SKU");
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="border border-primary/30 bg-primary/5 p-4 space-y-3">
+      <p className="font-body text-xs font-semibold text-text">Add new inventory SKU</p>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        <div className="col-span-2 md:col-span-3">
+          <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">Product</label>
+          <select
+            value={form.productId}
+            onChange={(e) => set("productId", e.target.value)}
+            className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text focus:outline-none focus:border-primary transition-colors"
+          >
+            <option value="">Select product…</option>
+            {productOptions.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} — {p.brand}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">Size</label>
+          <input
+            value={form.size}
+            onChange={(e) => set("size", e.target.value)}
+            placeholder="e.g. 42"
+            className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
+        <div>
+          <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">Color (optional)</label>
+          <input
+            value={form.color}
+            onChange={(e) => set("color", e.target.value)}
+            placeholder="e.g. Black"
+            className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
+        <div>
+          <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">Stock</label>
+          <input
+            type="number"
+            min={0}
+            value={form.stock}
+            onChange={(e) => set("stock", e.target.value)}
+            className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
+        <div>
+          <label className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-muted block mb-1">Low Stock Threshold</label>
+          <input
+            type="number"
+            min={1}
+            value={form.threshold}
+            onChange={(e) => set("threshold", e.target.value)}
+            className="w-full px-3 py-2 bg-background border border-border font-body text-sm text-text focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
+      </div>
+      {error && <p className="font-body text-xs text-error">{error}</p>}
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={createSku.isPending}
+          className="bg-primary text-white px-3.5 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors disabled:opacity-50"
+        >
+          {createSku.isPending ? "Adding…" : "Add SKU"}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-3 py-2 border border-border text-text-muted hover:text-text transition-colors"
+        >
+          <span className="material-symbols-outlined icon-outline text-[16px]">close</span>
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function AdminInventoryPage() {
+  const { data: skus = [], isLoading, error } = useSkus();
+  const { data: productsData } = useProducts({ limit: 100 });
+  const updateSku = useUpdateSku();
+  const deleteSku = useDeleteSku();
+
   const [tab, setTab] = useState<InventoryTab>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
-  const [inventory, setInventory] = useState(MOCK_INVENTORY);
+  const [showCreate, setShowCreate] = useState(false);
+
+  const productOptions = useMemo(
+    () => (productsData?.data ?? []).map((p) => ({ id: p.id, name: p.name, brand: p.brand })),
+    [productsData],
+  );
+
+  const totalUnits = skus.reduce((s, i) => s + i.stock, 0);
+  const lowCount = skus.filter((i) => i.status === "low_stock").length;
+  const outCount = skus.filter((i) => i.status === "out_of_stock").length;
 
   const filtered = useMemo(() => {
-    return inventory.filter((item) => {
-      const s = getStatus(item);
-      if (tab === "low") return s === "low_stock";
-      if (tab === "out") return s === "out_of_stock";
-      return true;
-    });
-  }, [inventory, tab]);
+    if (tab === "low") return skus.filter((s) => s.status === "low_stock");
+    if (tab === "out") return skus.filter((s) => s.status === "out_of_stock");
+    return skus;
+  }, [skus, tab]);
 
-  const totalSKUs = inventory.length;
-  const totalUnits = inventory.reduce((s, i) => s + i.current, 0);
-  const lowCount = inventory.filter((i) => getStatus(i) === "low_stock").length;
-  const outCount = inventory.filter((i) => getStatus(i) === "out_of_stock").length;
+  function startEdit(sku: Sku) {
+    setEditingId(sku.id);
+    setEditValue(String(sku.stock));
+  }
 
-  function commitEdit(id: string) {
+  function cancelEdit() {
+    setEditingId(null);
+    setEditValue("");
+  }
+
+  async function commitEdit(id: string) {
     const val = parseInt(editValue, 10);
     if (!isNaN(val) && val >= 0) {
-      setInventory((prev) => prev.map((i) => i.id === id ? { ...i, current: val } : i));
+      await updateSku.mutateAsync({ id, payload: { stock: val } });
     }
     setEditingId(null);
     setEditValue("");
   }
 
+  async function handleRestock(sku: Sku) {
+    const val = window.prompt(`New stock quantity for ${sku.productName} size ${sku.size}:`, String(sku.stock));
+    if (val === null) return;
+    const num = parseInt(val, 10);
+    if (!isNaN(num) && num >= 0) {
+      await updateSku.mutateAsync({
+        id: sku.id,
+        payload: { stock: num, lastRestocked: new Date().toISOString() },
+      });
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!window.confirm("Delete this SKU? This cannot be undone.")) return;
+    await deleteSku.mutateAsync(id);
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <p className="font-body text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted">Catalog</p>
+          <h1 className="font-heading text-2xl font-extrabold uppercase tracking-tight text-text mt-0.5">Inventory</h1>
+        </div>
+        <div className="flex items-center justify-center py-20">
+          <span className="material-symbols-outlined icon-outline text-[32px] text-text-muted/30 animate-spin">progress_activity</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <p className="font-body text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted">Catalog</p>
+          <h1 className="font-heading text-2xl font-extrabold uppercase tracking-tight text-text mt-0.5">Inventory</h1>
+        </div>
+        <div className="border border-error/30 bg-error/5 px-5 py-4">
+          <p className="font-body text-sm text-error">Failed to load inventory. Try refreshing.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <p className="font-body text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted">Catalog</p>
-        <h1 className="font-heading text-2xl font-extrabold uppercase tracking-tight text-text mt-0.5">Inventory</h1>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="font-body text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted">Catalog</p>
+          <h1 className="font-heading text-2xl font-extrabold uppercase tracking-tight text-text mt-0.5">Inventory</h1>
+        </div>
+        <button
+          onClick={() => setShowCreate(true)}
+          className="flex items-center gap-1.5 bg-primary text-white px-3.5 py-2 font-body text-xs font-bold uppercase tracking-wider hover:bg-primary-inverse transition-colors shrink-0"
+        >
+          <span className="material-symbols-outlined icon-outline text-[15px]">add</span>
+          Add SKU
+        </button>
       </div>
 
       {/* Summary chips */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Total SKUs", value: String(totalSKUs), icon: "qr_code", color: "text-text-muted" },
+          { label: "Total SKUs", value: String(skus.length), icon: "qr_code", color: "text-text-muted" },
           { label: "Total Units", value: String(totalUnits), icon: "inventory_2", color: "text-primary" },
           { label: "Low Stock", value: String(lowCount), icon: "warning", color: "text-[#ffb5a0]" },
           { label: "Out of Stock", value: String(outCount), icon: "remove_shopping_cart", color: "text-error" },
@@ -113,10 +278,18 @@ export default function AdminInventoryPage() {
         </div>
       )}
 
+      {/* Create form */}
+      {showCreate && (
+        <CreateSkuForm
+          productOptions={productOptions}
+          onClose={() => setShowCreate(false)}
+        />
+      )}
+
       {/* Tabs */}
       <div className="flex gap-2">
         {([
-          { value: "all" as InventoryTab, label: "All Stock", count: inventory.length },
+          { value: "all" as InventoryTab, label: "All Stock", count: skus.length },
           { value: "low" as InventoryTab, label: "Low Stock", count: lowCount },
           { value: "out" as InventoryTab, label: "Out of Stock", count: outCount },
         ]).map(({ value, label, count }) => (
@@ -138,7 +311,7 @@ export default function AdminInventoryPage() {
 
       {/* Table */}
       <div className="border border-border bg-surface overflow-x-auto">
-        <div className="hidden xl:grid grid-cols-[1fr_90px_80px_90px_80px_80px_80px_110px_100px_80px] gap-3 px-5 py-2.5 border-b border-border bg-surface-elevated">
+        <div className="hidden xl:grid grid-cols-[1fr_90px_80px_90px_80px_80px_80px_110px_100px_100px] gap-3 px-5 py-2.5 border-b border-border bg-surface-elevated">
           {["Product / SKU", "Brand", "Size", "Color", "Stock", "Reserved", "Available", "Status", "Last Restocked", ""].map((h) => (
             <p key={h} className="font-body text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted">{h}</p>
           ))}
@@ -148,31 +321,31 @@ export default function AdminInventoryPage() {
           {filtered.length === 0 ? (
             <div className="px-5 py-14 text-center">
               <span className="material-symbols-outlined icon-outline text-[40px] text-text-muted/20 block mb-3">inventory_2</span>
-              <p className="font-body text-sm text-text-muted">No items in this category</p>
+              <p className="font-body text-sm text-text-muted">
+                {skus.length === 0 ? "No SKUs yet — click \"Add SKU\" to create your first." : "No items in this category"}
+              </p>
             </div>
           ) : (
-            filtered.map((item) => {
-              const status = getStatus(item);
-              const available = item.current - item.reserved;
-              const isEditing = editingId === item.id;
+            filtered.map((sku) => {
+              const isEditing = editingId === sku.id;
               return (
                 <div
-                  key={item.id}
+                  key={sku.id}
                   className={cn(
-                    "flex xl:grid xl:grid-cols-[1fr_90px_80px_90px_80px_80px_80px_110px_100px_80px] gap-3 items-center px-5 py-3 hover:bg-surface-elevated transition-colors",
-                    status === "out_of_stock" && "opacity-70",
-                    status === "low_stock" && "border-l-2 border-l-[#ffb5a0]"
+                    "flex xl:grid xl:grid-cols-[1fr_90px_80px_90px_80px_80px_80px_110px_100px_100px] gap-3 items-center px-5 py-3 hover:bg-surface-elevated transition-colors",
+                    sku.status === "out_of_stock" && "opacity-70",
+                    sku.status === "low_stock" && "border-l-2 border-l-[#ffb5a0]"
                   )}
                 >
-                  {/* Name + SKU */}
+                  {/* Name + SKU code */}
                   <div className="min-w-0">
-                    <p className="font-body text-sm font-semibold text-text truncate">{item.name}</p>
-                    <p className="font-body text-[10px] font-mono text-text-muted">{item.sku}</p>
+                    <p className="font-body text-sm font-semibold text-text truncate">{sku.productName}</p>
+                    <p className="font-body text-[10px] font-mono text-text-muted">{skuCode(sku)}</p>
                   </div>
 
-                  <p className="hidden xl:block font-body text-xs text-text-muted">{item.brand}</p>
-                  <p className="hidden xl:block font-body text-sm text-text">{item.size}</p>
-                  <p className="hidden xl:block font-body text-sm text-text">{item.color}</p>
+                  <p className="hidden xl:block font-body text-xs text-text-muted">{sku.productBrand}</p>
+                  <p className="hidden xl:block font-body text-sm text-text">{sku.size}</p>
+                  <p className="hidden xl:block font-body text-sm text-text">{sku.color ?? "—"}</p>
 
                   {/* Stock — inline editable */}
                   <div className="hidden xl:block">
@@ -182,49 +355,70 @@ export default function AdminInventoryPage() {
                         type="number"
                         value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={() => commitEdit(item.id)}
-                        onKeyDown={(e) => { if (e.key === "Enter") commitEdit(item.id); if (e.key === "Escape") { setEditingId(null); setEditValue(""); } }}
+                        onBlur={() => commitEdit(sku.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") void commitEdit(sku.id);
+                          if (e.key === "Escape") cancelEdit();
+                        }}
                         className="w-16 px-2 py-1 bg-background border border-primary font-heading text-sm font-extrabold text-text focus:outline-none"
                       />
                     ) : (
-                      <button onClick={() => { setEditingId(item.id); setEditValue(String(item.current)); }}
+                      <button
+                        onClick={() => startEdit(sku)}
                         className={cn("font-heading text-sm font-extrabold hover:text-primary transition-colors",
-                          item.current === 0 ? "text-error" : item.current <= item.threshold ? "text-[#ffb5a0]" : "text-text"
-                        )}>
-                        {item.current}
+                          sku.stock === 0 ? "text-error" : sku.status === "low_stock" ? "text-[#ffb5a0]" : "text-text"
+                        )}
+                      >
+                        {sku.stock}
                       </button>
                     )}
                   </div>
 
-                  <p className="hidden xl:block font-body text-xs text-text-muted">{item.reserved}</p>
-                  <p className={cn("hidden xl:block font-heading text-sm font-extrabold", available <= 0 ? "text-error" : "text-text")}>{Math.max(0, available)}</p>
+                  <p className="hidden xl:block font-body text-xs text-text-muted">{sku.reserved}</p>
+                  <p className={cn("hidden xl:block font-heading text-sm font-extrabold", sku.available <= 0 ? "text-error" : "text-text")}>
+                    {sku.available}
+                  </p>
 
                   <div className="hidden xl:block">
-                    <span className={cn("px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider whitespace-nowrap", STATUS_CONFIG[status].classes)}>
-                      {STATUS_CONFIG[status].label}
+                    <span className={cn("px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider whitespace-nowrap", STATUS_CONFIG[sku.status].classes)}>
+                      {STATUS_CONFIG[sku.status].label}
                     </span>
                   </div>
 
-                  <p className="hidden xl:block font-body text-[10px] text-text-muted">{new Date(item.lastRestocked).toLocaleDateString("en-RW", { month: "short", day: "numeric", year: "numeric" })}</p>
+                  <p className="hidden xl:block font-body text-[10px] text-text-muted">
+                    {sku.lastRestocked
+                      ? new Date(sku.lastRestocked).toLocaleDateString("en-RW", { month: "short", day: "numeric", year: "numeric" })
+                      : "—"}
+                  </p>
 
-                  {/* Mobile: status */}
+                  {/* Mobile status */}
                   <div className="flex xl:hidden items-center gap-2 ml-auto shrink-0">
-                    <span className={cn("px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider", STATUS_CONFIG[status].classes)}>
-                      {item.current}
+                    <span className={cn("px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-wider", STATUS_CONFIG[sku.status].classes)}>
+                      {sku.stock}
                     </span>
                   </div>
 
                   {/* Actions */}
                   <div className="hidden xl:flex items-center gap-1">
                     <button
-                      onClick={() => { setEditingId(item.id); setEditValue(String(item.current)); }}
-                      className="p-1.5 font-body text-[10px] font-semibold text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
+                      onClick={() => startEdit(sku)}
+                      className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
                       title="Edit stock"
                     >
                       <span className="material-symbols-outlined icon-outline text-[15px]">edit</span>
                     </button>
-                    <button className="flex items-center gap-1 px-2 py-1 border border-secondary/40 font-body text-[10px] font-semibold text-secondary hover:bg-secondary/10 transition-colors whitespace-nowrap">
+                    <button
+                      onClick={() => void handleRestock(sku)}
+                      className="flex items-center gap-1 px-2 py-1 border border-secondary/40 font-body text-[10px] font-semibold text-secondary hover:bg-secondary/10 transition-colors whitespace-nowrap"
+                    >
                       Restock
+                    </button>
+                    <button
+                      onClick={() => void handleDelete(sku.id)}
+                      className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 transition-colors"
+                      title="Delete SKU"
+                    >
+                      <span className="material-symbols-outlined icon-outline text-[15px]">delete</span>
                     </button>
                   </div>
                 </div>
@@ -235,7 +429,7 @@ export default function AdminInventoryPage() {
 
         <div className="px-5 py-3 border-t border-border bg-surface-elevated">
           <p className="font-body text-[10px] text-text-muted">
-            Showing {filtered.length} of {inventory.length} SKUs · Click a stock number to edit inline
+            Showing {filtered.length} of {skus.length} SKUs · Click a stock number to edit inline
           </p>
         </div>
       </div>

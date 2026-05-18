@@ -64,4 +64,11 @@ export class User extends BaseEntity {
 
   @Column({ type: 'text', nullable: true, default: null })
   adminNotes!: string | null;
+
+  @Exclude()
+  @Column({ type: 'varchar', nullable: true, default: null })
+  twoFactorSecret!: string | null;
+
+  @Column({ default: false })
+  twoFactorEnabled!: boolean;
 }
