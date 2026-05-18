@@ -11,5 +11,6 @@ import { RolesGuard } from '../../common/guards/roles.guard';
   imports: [TypeOrmModule.forFeature([StoreSettings, NotificationPrefs, User])],
   providers: [SettingsService, RolesGuard],
   controllers: [SettingsController],
+  exports: [SettingsService],
 })
 export class SettingsModule {}

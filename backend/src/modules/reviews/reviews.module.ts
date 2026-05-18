@@ -6,9 +6,13 @@ import { Order } from '../orders/order.entity';
 import { OrderItem } from '../orders/order-item.entity';
 import { ReviewsService } from './reviews.service';
 import { ReviewsController } from './reviews.controller';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Review, Product, Order, OrderItem])],
+  imports: [
+    TypeOrmModule.forFeature([Review, Product, Order, OrderItem]),
+    NotificationsModule,
+  ],
   providers: [ReviewsService],
   controllers: [ReviewsController],
 })

@@ -113,4 +113,34 @@ export class MailService {
       agentAssignmentTemplate(order),
     );
   }
+
+  async sendAdminNotification(
+    to: string,
+    type: string,
+    message: string,
+    metadata: Record<string, unknown>,
+  ): Promise<void> {
+    const subjectMap: Record<string, string> = {
+      new_order: 'New order received',
+      low_stock: 'Low stock alert',
+      new_review: 'New review submitted',
+      new_customer: 'New customer registered',
+      failed_payment: 'Payment failed',
+      return_request: 'Return request received',
+    };
+    const subject = subjectMap[type] ?? 'Kickcraft Admin Notification';
+    const metaLines = Object.entries(metadata)
+      .map(
+        ([k, v]) =>
+          `<tr><td style="color:#888;padding:2px 8px 2px 0">${k}</td><td>${String(v)}</td></tr>`,
+      )
+      .join('');
+    const html = `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+        <p style="font-size:16px;font-weight:600;margin-bottom:8px">${message}</p>
+        ${metaLines ? `<table style="font-size:13px;border-collapse:collapse">${metaLines}</table>` : ''}
+        <p style="margin-top:24px;font-size:12px;color:#888">Kickcraft Admin · kickcraft.com</p>
+      </div>`;
+    await this.send(to, subject, html);
+  }
 }

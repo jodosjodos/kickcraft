@@ -27,6 +27,7 @@ import { ChangePasswordDirectDto } from './dto/change-password-direct.dto';
 import { VerifyTotpDto } from './dto/verify-totp.dto';
 import { User } from '../users/user.entity';
 import { Session } from './session.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AuthService {
@@ -39,6 +40,7 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async register(dto: RegisterDto): Promise<User> {
@@ -62,6 +64,12 @@ export class AuthService {
 
     void this.mailService.sendVerificationEmail(user.email, verificationToken);
     void this.mailService.sendWelcomeEmail(user.email, user.name);
+
+    void this.notificationsService.createForAllAdmins(
+      'new_customer',
+      `New customer registered: ${user.name}`,
+      { userId: user.id, userName: user.name, email: user.email },
+    );
 
     return user;
   }

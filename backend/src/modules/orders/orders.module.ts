@@ -8,11 +8,13 @@ import { Sku } from '../inventory/sku.entity';
 import { OrdersService } from './orders.service';
 import { OrdersController } from './orders.controller';
 import { DiscountsModule } from '../discounts/discounts.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Order, OrderItem, Product, DeliveryAgent, Sku]),
     DiscountsModule,
+    NotificationsModule,
   ],
   providers: [OrdersService],
   controllers: [OrdersController],

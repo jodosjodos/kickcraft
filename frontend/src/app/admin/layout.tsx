@@ -7,6 +7,9 @@ import { useLogout } from "@/hooks/api/use-auth";
 import { useMyOrders } from "@/hooks/api/use-orders";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { NotificationProvider } from "@/providers/notification-provider";
+import { AdminTopbar } from "@/components/admin/admin-topbar";
+import { NotificationBell } from "@/components/admin/notification-bell";
 
 const NAV_SECTIONS = [
   {
@@ -203,6 +206,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   );
 
   return (
+    <NotificationProvider>
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
       <div className="hidden md:flex fixed top-0 left-0 bottom-0 w-60 z-40">
@@ -222,6 +226,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main */}
       <main className="flex-1 md:ml-60 min-h-screen bg-background">
+        {/* Desktop topbar */}
+        <AdminTopbar />
+
         {/* Mobile header */}
         <div className="md:hidden flex items-center justify-between px-5 py-4 border-b border-border bg-surface sticky top-0 z-30">
           <div className="flex items-center gap-2.5">
@@ -232,17 +239,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               KickCraft
             </Link>
           </div>
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-2 text-text-muted hover:text-text transition-colors"
-            aria-label="Open menu"
-          >
-            <span className="material-symbols-outlined icon-outline text-[22px]">menu</span>
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="p-2 text-text-muted hover:text-text transition-colors"
+              aria-label="Open menu"
+            >
+              <span className="material-symbols-outlined icon-outline text-[22px]">menu</span>
+            </button>
+          </div>
         </div>
 
         <div className="p-5 md:p-8">{children}</div>
       </main>
     </div>
+    </NotificationProvider>
   );
 }

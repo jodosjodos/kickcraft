@@ -10,6 +10,7 @@ import { Product } from '../products/product.entity';
 import { Order } from '../orders/order.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewStatusDto } from './dto/update-review-status.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export interface ReviewWithVerified extends Omit<Review, 'orderId'> {
   verified: boolean;
@@ -29,6 +30,7 @@ export class ReviewsService {
     private readonly productRepo: Repository<Product>,
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(
@@ -76,6 +78,17 @@ export class ReviewsService {
     });
 
     const saved = await this.reviewRepo.save(review);
+
+    void this.notificationsService.createForAllAdmins(
+      'new_review',
+      `New review submitted for ${product.name}`,
+      {
+        reviewId: saved.id,
+        productId: saved.productId,
+        productName: product.name,
+      },
+    );
+
     return toResponse(saved);
   }
 

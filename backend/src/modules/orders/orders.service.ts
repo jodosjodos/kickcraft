@@ -21,6 +21,7 @@ import { DiscountsService } from '../discounts/discounts.service';
 import { DeliveryAgent } from '../delivery-agents/delivery-agent.entity';
 import { Sku } from '../inventory/sku.entity';
 import { MailService } from '../mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const DELIVERY_FEE = 2000;
 
@@ -52,6 +53,7 @@ export class OrdersService {
     private readonly dataSource: DataSource,
     private readonly discountsService: DiscountsService,
     private readonly mailService: MailService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(dto: CreateOrderDto, userId?: string): Promise<Order> {
@@ -85,6 +87,22 @@ export class OrdersService {
         }
 
         await manager.decrement(Sku, { id: sku.id }, 'stock', input.quantity);
+
+        const updatedSku = await manager.findOne(Sku, {
+          where: { id: sku.id },
+        });
+        if (updatedSku && updatedSku.stock <= updatedSku.threshold) {
+          void this.notificationsService.createForAllAdmins(
+            'low_stock',
+            `Low stock: ${product.name} size ${input.size} (${updatedSku.stock} left)`,
+            {
+              productId: product.id,
+              productName: product.name,
+              size: input.size,
+              stock: updatedSku.stock,
+            },
+          );
+        }
 
         const linePrice = product.price * input.quantity;
         subtotal += linePrice;
@@ -152,6 +170,12 @@ export class OrdersService {
       if (discountId) {
         await this.discountsService.incrementUsage(discountId);
       }
+
+      void this.notificationsService.createForAllAdmins(
+        'new_order',
+        `New order #${savedOrder.orderToken} placed`,
+        { orderId: savedOrder.id, orderToken: savedOrder.orderToken },
+      );
 
       return manager.findOneOrFail(Order, { where: { id: savedOrder.id } });
     });

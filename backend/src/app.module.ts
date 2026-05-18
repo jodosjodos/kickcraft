@@ -14,6 +14,7 @@ import { MailModule } from './modules/mail/mail.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     AnalyticsModule,
     InventoryModule,
     SettingsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

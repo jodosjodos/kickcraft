@@ -51,4 +51,8 @@ export const queryKeys = {
   inventory: {
     all: ["inventory"] as const,
   },
+  notifications: {
+    all: () => ["notifications"] as const,
+    unreadCount: () => ["notifications", "unread-count"] as const,
+  },
 };
