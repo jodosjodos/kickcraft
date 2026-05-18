@@ -40,4 +40,7 @@ export const queryKeys = {
   discounts: {
     all: ["discounts"] as const,
   },
+  analytics: {
+    dashboard: () => ["analytics", "dashboard"] as const,
+  },
 };

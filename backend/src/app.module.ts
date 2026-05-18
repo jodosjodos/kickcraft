@@ -11,6 +11,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { DeliveryAgentsModule } from './modules/delivery-agents/delivery-agents.module';
 import { DiscountsModule } from './modules/discounts/discounts.module';
 import { MailModule } from './modules/mail/mail.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { MailModule } from './modules/mail/mail.module';
     ReviewsModule,
     DeliveryAgentsModule,
     DiscountsModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

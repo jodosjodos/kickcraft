@@ -94,7 +94,6 @@ Thumbs.db
 # ─── Security / secrets ────────────────────────────────────
 *.pem
 *.key
-config.bat
 config.local.js
 config.local.json
 .sentryclirc
