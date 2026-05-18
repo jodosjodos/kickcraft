@@ -1,53 +1,4 @@
-export interface RevenueByDay {
-  day: string;
-  date: string;
-  revenue: number;
-}
-
-export interface CategoryBreakdown {
-  name: string;
-  subCategory: string;
-  value: number;
-  revenue: number;
-  color: string;
-}
-
-export interface TopProduct {
-  rank: number;
-  productId: string;
-  name: string;
-  brand: string;
-  units: number;
-  revenue: number;
-}
-
-export interface RecentActivity {
-  orderToken: string;
-  status: string;
-  phone: string;
-  total: number;
-  createdAt: string;
-}
-
-export interface DashboardSummary {
-  totalRevenue: number;
-  totalOrders: number;
-  deliveredOrders: number;
-  pendingOrders: number;
-  totalProducts: number;
-}
-
-export interface DashboardAnalytics {
-  summary: DashboardSummary;
-  revenueByDay: RevenueByDay[];
-  categoryBreakdown: CategoryBreakdown[];
-  topProducts: TopProduct[];
-  recentActivity: RecentActivity[];
-}
-
-// ─── Analytics page types ────────────────────────────────────────────────────
-
-export type AnalyticsPeriod = "7d" | "30d" | "90d";
+export type AnalyticsPeriod = '7d' | '30d' | '90d';
 
 export interface RevenueChartPoint {
   day: string;
@@ -80,7 +31,7 @@ export interface RevenueTopProduct {
   revenue: number;
 }
 
-export interface RevenueAnalytics {
+export interface RevenueAnalyticsResponse {
   chart: RevenueChartPoint[];
   summary: RevenueSummary;
   topProducts: RevenueTopProduct[];
@@ -100,7 +51,7 @@ export interface OrderStatusItem {
   color: string;
 }
 
-export interface OrdersAnalytics {
+export interface OrdersAnalyticsResponse {
   chart: OrdersChartPoint[];
   statusBreakdown: OrderStatusItem[];
 }
@@ -120,7 +71,7 @@ export interface TopCustomerItem {
   tier: string;
 }
 
-export interface CustomersAnalytics {
+export interface CustomersAnalyticsResponse {
   tierDistribution: CustomerTierItem[];
   topCustomers: TopCustomerItem[];
 }

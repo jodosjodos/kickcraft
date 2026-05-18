@@ -2,6 +2,7 @@ import type { ProductFilters } from "@/types/api/products";
 import type { OrderFilters } from "@/types/api/orders";
 import type { ReviewStatus } from "@/types/api/reviews";
 import type { UserFilters } from "@/types/api/users";
+import type { AnalyticsPeriod } from "@/types/api/analytics";
 
 export const queryKeys = {
   auth: {
@@ -43,5 +44,8 @@ export const queryKeys = {
   },
   analytics: {
     dashboard: () => ["analytics", "dashboard"] as const,
+    revenue: (period: AnalyticsPeriod) => ["analytics", "revenue", period] as const,
+    orders: (period: AnalyticsPeriod) => ["analytics", "orders", period] as const,
+    customers: () => ["analytics", "customers"] as const,
   },
 };
