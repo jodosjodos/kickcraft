@@ -22,9 +22,10 @@ function pad(n: number): string {
 }
 
 export function DealsBanner() {
-  const [time, setTime] = useState(getTimeUntilEndOfMonth);
+  const [time, setTime] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
 
   useEffect(() => {
+    setTime(getTimeUntilEndOfMonth());
     const interval = setInterval(() => {
       setTime(getTimeUntilEndOfMonth());
     }, 1000);
@@ -67,15 +68,15 @@ export function DealsBanner() {
                 </span>
                 <div className="flex items-center gap-1 font-heading text-sm font-extrabold text-primary tracking-wider">
                   <span className="bg-primary/10 px-2 py-0.5 rounded">
-                    {pad(time.hours)}h
+                    {time ? pad(time.hours) : "--"}h
                   </span>
                   <span className="text-text-muted">:</span>
                   <span className="bg-primary/10 px-2 py-0.5 rounded">
-                    {pad(time.minutes)}m
+                    {time ? pad(time.minutes) : "--"}m
                   </span>
                   <span className="text-text-muted">:</span>
                   <span className="bg-primary/10 px-2 py-0.5 rounded">
-                    {pad(time.seconds)}s
+                    {time ? pad(time.seconds) : "--"}s
                   </span>
                 </div>
               </div>
