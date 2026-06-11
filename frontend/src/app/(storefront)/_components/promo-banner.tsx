@@ -11,7 +11,7 @@ export function PromoBanner() {
         >
           {/* Background image */}
           <Image
-            src="https://images.unsplash.com/photo-1556906781-9a412961a28c?auto=format&fit=crop&w=1400&q=80"
+            src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1400&q=80"
             alt="New arrivals promo"
             fill
             sizes="(max-width: 768px) 100vw, 1200px"

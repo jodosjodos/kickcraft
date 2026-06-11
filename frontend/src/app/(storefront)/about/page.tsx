@@ -66,33 +66,38 @@ export default function AboutPage() {
             </div>
             <div className="font-body text-sm text-text-muted leading-relaxed space-y-4 mt-6 max-w-md">
               <p>
-                Finding authentic, high-end sneakers in Kigali used to mean
-                rolling the dice. Navigating crowded markets, dealing with
-                inconsistent pricing, and risking your hard-earned money on
-                fakes was the standard.
+                It started in early 2024, somewhere between Kimironko Market
+                and the CBD. We were students, athletes, sneakerheads — trying
+                to cop real pairs in Kigali. Every time, same story: inflated
+                prices, zero guarantees, and a 50/50 shot at getting fakes.
               </p>
-              <p>We lived that frustration. So we built the solution.</p>
+              <p>
+                We got burned once too many times. So in March 2024, we stopped
+                complaining and started building — a platform built from the
+                ground up for Rwandan youth who take their style seriously.
+              </p>
               <p className="text-text-muted/70">
-                Kickcraft isn&apos;t just a store; it&apos;s a standard. We
-                guarantee authenticity, provide transparent pricing, and deliver
-                directly to your door. No stress, just heat.
+                Two years in, we&apos;ve shipped hundreds of verified pairs
+                across Kigali. Every shoe authenticated. Every order tracked.
+                Every customer treated like they matter — because they do.
+                No stress, just heat.
               </p>
             </div>
           </div>
 
-          {/* Image — uses the actual Stitch About page photo */}
+          {/* Athlete image */}
           <div className="relative aspect-4/3 rounded-sm border border-border overflow-hidden bg-surface">
             <Image
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5sjw4u7yVhUa7HmtviUYddVArv_7obv6egfnb5MQpJl_AF_YO_-QJLBjJhkzaHfYFGDozrY9atNJFFb4iO2UKOst2EN36ib-VKIyIeTuERHhenNhw8IhwFVaYy6vKH5ldRndC8481lJzCIC39XKC1mEgKEhoRJfO048KEZpByyEb9LMqYCFV2YaP4vOrhi9PTTCmxf_AJOPw8U_F9kGPOpnQtWzg-elJB4xltuMkk-AHMs7xgKlVERDKt4bZoIyH4NwG9LchCyfpY"
-              alt="Kickcraft shoes"
+              src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=1200&q=80"
+              alt="Athlete lacing up sneakers — Kickcraft"
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
+              className="object-cover object-top"
             />
             <div className="absolute inset-0 bg-linear-to-t from-background/70 via-transparent to-transparent" />
             <div className="absolute bottom-4 left-4">
               <span className="bg-surface/90 text-text font-body text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 border border-border">
-                Established 2024
+                Established 2024 · Kigali, Rwanda
               </span>
             </div>
           </div>

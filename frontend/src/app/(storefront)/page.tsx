@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { HeroSection } from "./_components/hero-section";
 import { CategoriesSection } from "./_components/categories-section";
+import { VideoDivider } from "./_components/video-divider";
 import { PromoBanner } from "./_components/promo-banner";
 import { FeaturedSection } from "./_components/featured-section";
+import { TestimonialsSection } from "./_components/testimonials-section";
 import { DealsBanner } from "./_components/deals-banner";
 
 export const metadata: Metadata = {
@@ -16,8 +18,10 @@ export default function HomePage() {
     <>
       <HeroSection />
       <CategoriesSection />
+      <VideoDivider />
       <PromoBanner />
       <FeaturedSection />
+      <TestimonialsSection />
       <DealsBanner />
     </>
   );

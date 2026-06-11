@@ -1,7 +1,36 @@
+"use client";
+
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
+import { useEffect, useState } from "react";
+
+function getTimeUntilEndOfMonth(): { hours: number; minutes: number; seconds: number } {
+  const now = new Date();
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const diff = Math.max(0, endOfMonth.getTime() - now.getTime());
+
+  const totalSeconds = Math.floor(diff / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return { hours, minutes, seconds };
+}
+
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
 
 export function DealsBanner() {
+  const [time, setTime] = useState(getTimeUntilEndOfMonth);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(getTimeUntilEndOfMonth());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <section className="py-20 px-5 md:px-8">
       <div className="mx-auto max-w-container">
@@ -25,10 +54,31 @@ export function DealsBanner() {
               <h2 className="font-heading text-2xl md:text-4xl font-extrabold uppercase tracking-tight text-text mb-2">
                 Up to 40% Off
               </h2>
-              <p className="font-body text-sm text-text-muted max-w-md">
+              <p className="font-body text-sm text-text-muted max-w-md mb-4">
                 Flash sales on top brands. Limited stock — grab yours before
                 it&apos;s gone.
               </p>
+
+              {/* Countdown timer */}
+              <div className="flex items-center gap-2">
+                <Icon name="timer" size={14} className="text-primary" />
+                <span className="font-body text-xs text-text-muted uppercase tracking-widest">
+                  Ends in
+                </span>
+                <div className="flex items-center gap-1 font-heading text-sm font-extrabold text-primary tracking-wider">
+                  <span className="bg-primary/10 px-2 py-0.5 rounded">
+                    {pad(time.hours)}h
+                  </span>
+                  <span className="text-text-muted">:</span>
+                  <span className="bg-primary/10 px-2 py-0.5 rounded">
+                    {pad(time.minutes)}m
+                  </span>
+                  <span className="text-text-muted">:</span>
+                  <span className="bg-primary/10 px-2 py-0.5 rounded">
+                    {pad(time.seconds)}s
+                  </span>
+                </div>
+              </div>
             </div>
 
             <Link
